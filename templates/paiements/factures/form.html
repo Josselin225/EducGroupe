@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-file-invoice{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-file-invoice me-2 text-primary"></i>{{ page_title }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label fw-semibold">N° Facture <span class="text-danger">*</span></label>
+              {{ form.numero }}
+            </div>
+            <div class="col-md-7">
+              <label class="form-label fw-semibold">Élève <span class="text-danger">*</span></label>
+              {{ form.eleve }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Type de frais <span class="text-danger">*</span></label>
+              {{ form.type_frais }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Année scolaire</label>
+              {{ form.annee_scolaire }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Montant total (FCFA) <span class="text-danger">*</span></label>
+              {{ form.montant_total }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Date d'échéance</label>
+              {{ form.date_echeance }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Observations</label>
+              {{ form.observations }}
+            </div>
+          </div>
+          <div class="d-flex gap-2 justify-content-end mt-4">
+            <a href="{% url 'paiements:factures_liste' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

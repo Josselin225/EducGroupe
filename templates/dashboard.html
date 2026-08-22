@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-tachometer-alt{% endblock %}
+{% block heading %}Tableau de bord{% endblock %}
+
+{% block extra_css %}
+/* ── KPI cards ── */
+.kpi-card {
+    background: var(--surface-bg);
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    border-left: 4px solid;
+    transition: transform .2s, box-shadow .2s;
+    height: 100%;
+    display: block;
+    text-decoration: none;
+    cursor: pointer;
+}
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.10); text-decoration: none; }
+.kpi-card .kpi-val { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+.kpi-card .kpi-lbl { font-size: .8rem; color: #6c757d; margin-top: 4px; }
+.kpi-card .kpi-icon { font-size: 2.4rem; opacity: .12; }
+.kpi-trend {
+    font-size: .7rem; font-weight: 600; padding: 2px 7px;
+    border-radius: 20px; display: inline-flex; align-items: center; gap: 3px;
+}
+
+/* ── Module buttons ── */
+.module-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 8px; border-radius: 12px; text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+    gap: 6px; font-size: .78rem; font-weight: 600; text-align: center;
+}
+.module-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.module-btn i { font-size: 1.5rem; }
+
+/* ── Progress bars ── */
+.prog-wrap { height: 7px; border-radius: 4px; background: #e9ecef; overflow: hidden; }
+.prog-fill  { height: 100%; border-radius: 4px; transition: width .6s ease; }
+
+/* ── Sections ── */
+.section-card { background: var(--surface-bg); border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.06); overflow: hidden; height: 100%; }
+.section-card .card-header { background: var(--surface-bg); border-bottom: 1px solid var(--border-soft); padding: 14px 18px; font-weight: 600; font-size: .88rem; }
+.section-card .card-body { padding: 16px 18px; }
+.section-card .card-footer { padding: 10px 18px; background: var(--table-head-bg); border-top: 1px solid var(--border-soft); }
+
+/* ── List items ── */
+.dash-list-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-soft); }
+.dash-list-item:last-child { border-bottom: none; }
+.avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    object-fit: cover; background: #e8f0fe;
+    display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; color: #1a3c6e;
+}
+.avatar-sm img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+
+/* ── Absence heatmap ── */
+.abs-bar-wrap { display: flex; align-items: flex-end; gap: 5px; height: 70px; }
+.abs-bar-col  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.abs-bar      { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height .4s; }
+.abs-bar-lbl  { font-size: .62rem; color: #9ca3af; white-space: nowrap; }
+
+/* ── Badge statut ── */
+.badge-statut { padding: 3px 8px; border-radius: 20px; font-size: .7rem; font-weight: 600; }
+
+/* ── Responsive ── */
+@media (max-width: 576px) {
+    .kpi-val { font-size: 1.8rem !important; }
+}
+{% endblock %}
+
+{% block content %}
+
+<!-- ① BIENVENUE + ANNÉE -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h5 class="fw-bold mb-0" style="color:#1a3c6e">
+      Bonjour, {{ request.user.get_full_name|default:request.user.username }} 👋
+    </h5>
+    <div class="text-muted small">{{ aujourd_hui|date:"l d F Y"|capfirst }}</div>
+  </div>
+  {% if annee %}
+  <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background:#e8f0fe">
+    <i class="fas fa-calendar-check text-primary"></i>
+    <span class="fw-semibold text-primary small">{{ annee.libelle }}</span>
+    <span class="text-muted small d-none d-sm-inline">{{ annee.date_debut|date:"d/m/Y" }} → {{ annee.date_fin|date:"d/m/Y" }}</span>
+    {% if not est_enseignant %}<a href="{% url 'eleves:annees_liste' %}" class="btn btn-outline-primary" style="padding:2px 10px;font-size:.72rem">Changer</a>{% endif %}
+  </div>
+  {% else %}
+  <a href="{% url 'eleves:annees_liste' %}" class="btn btn-warning btn-sm">
+    <i class="fas fa-exclamation-triangle me-1"></i>Activer une année scolaire
+  </a>
+  {% endif %}
+</div>
+
+<!-- ③ KPIs PRINCIPAUX -->
+<div class="row g-3 mb-4">
+  <!-- Élèves -->
+  <div class="col-6 col-md-3">
+    <a href="/eleves/" class="kpi-card" style="border-color:#1a3c6e">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="kpi-val text-primary">{{ total_eleves }}</div>
+          <div class="kpi-lbl">Élèves inscrits</div>
+          <div class="mt-2 d-flex gap-1 flex-wrap">
+            <span class="kpi-trend" style="background:#e8f0fe;color:#1a3c6e">
+              <i class="fas fa-mars" style="font-size:.6rem"></i> {{ total_garcons }}
+            </span>
+            <span class="kpi-trend" style="background:#fce4ec;color:#c2185b">
+              <i class="fas fa-venus" style="font-size:.6rem"></i> {{ total_filles }}
+            </span>
+          </div>
+        </div>
+        <i class="fas fa-user-graduate kpi-icon text-primary"></i>
+      </div>
+    </a>
+  </div>
+
+  <!-- Enseignants (non enseignant) -->
+  {% if not est_enseignant %}
+  <div class="col-6 col-md-3">
+    <a href="/enseignants/" class="kpi-card" style="border-color:#28a745">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="kpi-val text-success">{{ total_enseignants }}</div>
+          <div class="kpi-lbl">Enseignants actifs</div>
+          <span class="kpi-trend mt-2 d-inline-flex" style="background:#e8f5e9;color:#2e7d32">
+            Gérer <i class="fas fa-arrow-right ms-1" style="font-size:.6rem"></i>
+          </span>
+        </div>
+        <i class="fas fa-chalkboard-teacher kpi-icon text-success"></i>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Classes -->
+  <div class="col-6 col-md-3">
+    <a href="/eleves/classes/" class="kpi-card" style="border-color:#e8a020">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="kpi-val" style="color:#e8a020">{{ total_classes }}</div>
+          <div class="kpi-lbl">{% if est_enseignant %}Ma classe{% else %}Classes — {{ total_ecoles }} école(s){% endif %}</div>
+          {% if not est_enseignant %}
+          <span class="kpi-trend mt-2 d-inline-flex" style="background:#fff8e1;color:#e65100">
+            Voir <i class="fas fa-arrow-right ms-1" style="font-size:.6rem"></i>
+          </span>
+          {% endif %}
+        </div>
+        <i class="fas fa-door-open kpi-icon" style="color:#e8a020"></i>
+      </div>
+    </a>
+  </div>
+
+  <!-- Absents du jour -->
+  <div class="col-6 col-md-3">
+    <a href="{% url 'presences:index' %}" class="kpi-card" style="border-color:#dc3545">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="kpi-val text-danger">{{ absents_jour }}</div>
+          <div class="kpi-lbl">Absents aujourd'hui</div>
+          <div class="mt-2 d-flex gap-1 flex-wrap">
+            {% if retards_jour > 0 %}
+            <span class="kpi-trend" style="background:#fff8e1;color:#e65100">
+              <i class="fas fa-clock" style="font-size:.6rem"></i> {{ retards_jour }} retard(s)
+            </span>
+            {% else %}
+            <span class="kpi-trend" style="background:#e8f5e9;color:#2e7d32">Tous présents</span>
+            {% endif %}
+          </div>
+        </div>
+        <i class="fas fa-user-times kpi-icon text-danger"></i>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ④ LIGNE PRINCIPALE : Finances · Tendance absences · Accès rapide -->
+<div class="row g-3 mb-4">
+
+  <!-- FINANCES (non enseignant) -->
+  {% if not est_enseignant %}
+  <div class="col-md-4">
+    <div class="section-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-money-bill-wave me-2 text-success"></i>Situation financière</span>
+        {% if annee %}<small class="text-muted fw-normal">{{ annee.libelle }}</small>{% endif %}
+      </div>
+      <div class="card-body">
+        <!-- Taux global -->
+        <div class="d-flex justify-content-between mb-1">
+          <small class="text-muted">Taux de recouvrement</small>
+          <small class="fw-bold {% if taux_recouvrement >= 80 %}text-success{% elif taux_recouvrement >= 50 %}text-warning{% else %}text-danger{% endif %}">{{ taux_recouvrement }}%</small>
+        </div>
+        <div class="prog-wrap mb-3">
+          <div class="prog-fill {% if taux_recouvrement >= 80 %}bg-success{% elif taux_recouvrement >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+               style="width:{{ taux_recouvrement }}%"></div>
+        </div>
+        <!-- 3 chiffres -->
+        <div class="row g-0 text-center mb-3">
+          <div class="col-4" style="border-right:1px solid #f0f0f0">
+            <div class="fw-bold text-primary" style="font-size:1.05rem">{{ total_attendu|floatformat:0 }}</div>
+            <div class="text-muted" style="font-size:.68rem">Attendu (FCFA)</div>
+          </div>
+          <div class="col-4" style="border-right:1px solid #f0f0f0">
+            <div class="fw-bold text-success" style="font-size:1.05rem">{{ total_encaisse|floatformat:0 }}</div>
+            <div class="text-muted" style="font-size:.68rem">Encaissé</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold text-danger" style="font-size:1.05rem">{{ total_restant|floatformat:0 }}</div>
+            <div class="text-muted" style="font-size:.68rem">Restant</div>
+          </div>
+        </div>
+        {% if nb_impayes > 0 %}
+        <div class="d-flex align-items-center gap-2 p-2 rounded-3 mb-2" style="background:#fff3cd">
+          <i class="fas fa-exclamation-triangle text-warning flex-shrink-0"></i>
+          <small class="fw-semibold text-dark">{{ nb_impayes }} facture(s) en attente ou partielle(s)</small>
+        </div>
+        {% endif %}
+        <!-- Paiements récents -->
+        {% if paiements_recents %}
+        <div class="mt-2">
+          <div class="text-muted mb-1" style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px">Derniers paiements</div>
+          {% for p in paiements_recents %}
+          <div class="dash-list-item">
+            <div style="flex:1; min-width:0">
+              <div class="fw-semibold text-truncate" style="font-size:.8rem">{{ p.facture.eleve.nom }} {{ p.facture.eleve.prenom }}</div>
+              <div class="text-muted" style="font-size:.7rem">{{ p.facture.type_frais.nom }} · {{ p.date_paiement|date:"d/m" }}</div>
+            </div>
+            <span class="text-success fw-bold" style="font-size:.82rem; white-space:nowrap">+{{ p.montant|floatformat:0 }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer text-center">
+        <a href="/paiements/factures/?statut=en_attente" class="small text-primary">Factures en attente →</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- TENDANCE ABSENCES (7 jours) -->
+  <div class="{% if est_enseignant %}col-md-6{% else %}col-md-4{% endif %}">
+    <div class="section-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-chart-bar me-2 text-danger"></i>Absences — 7 derniers jours</span>
+        <a href="{% url 'presences:statistiques' %}" class="small text-muted text-decoration-none">Statistiques →</a>
+      </div>
+      <div class="card-body">
+        <canvas id="chartAbsences" height="100"></canvas>
+        <div class="mt-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Total sur 7 jours</small>
+            <span class="fw-bold text-danger">{% with total=absences_7j_data %}
+              {% for n in absences_7j_data %}{% if forloop.first %}{{ n }}{% else %}{{ n }}{% endif %}{% endfor %}
+            {% endwith %}</span>
+          </div>
+        </div>
+        <!-- Appel rapide -->
+        <div class="mt-3 pt-2" style="border-top:1px solid #f5f5f5">
+          <a href="{% url 'presences:appel_selection' %}" class="btn btn-sm btn-outline-danger w-100">
+            <i class="fas fa-clipboard-check me-1"></i>Faire l'appel d'aujourd'hui
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCÈS RAPIDE -->
+  <div class="{% if est_enseignant %}col-md-6{% else %}col-md-4{% endif %}">
+    <div class="section-card">
+      <div class="card-header"><i class="fas fa-th-large me-2 text-primary"></i>Accès rapide</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-4">
+            <a href="/eleves/" class="module-btn" style="background:#e8f0fe;color:#1a3c6e">
+              <i class="fas fa-user-graduate"></i>Élèves
+            </a>
+          </div>
+          {% if not est_enseignant %}
+          <div class="col-4">
+            <a href="/enseignants/" class="module-btn" style="background:#e8f5e9;color:#2e7d32">
+              <i class="fas fa-chalkboard-teacher"></i>Enseignants
+            </a>
+          </div>
+          {% endif %}
+          <div class="col-4">
+            <a href="{% url 'presences:appel_selection' %}" class="module-btn" style="background:#e0f2f1;color:#00695c">
+              <i class="fas fa-clipboard-check"></i>Appel
+            </a>
+          </div>
+          <div class="col-4">
+            <a href="/notes/" class="module-btn" style="background:#fce4ec;color:#c62828">
+              <i class="fas fa-star"></i>Notes
+            </a>
+          </div>
+          <div class="col-4">
+            <a href="/emploi-du-temps/" class="module-btn" style="background:#e3f2fd;color:#1565c0">
+              <i class="fas fa-calendar-alt"></i>Emploi
+            </a>
+          </div>
+          {% if not est_enseignant %}
+          <div class="col-4">
+            <a href="/paiements/" class="module-btn" style="background:#f3e5f5;color:#6a1b9a">
+              <i class="fas fa-money-bill-wave"></i>Paiements
+            </a>
+          </div>
+          <div class="col-4">
+            <a href="/rapports/" class="module-btn" style="background:#fff8e1;color:#e65100">
+              <i class="fas fa-chart-bar"></i>Rapports
+            </a>
+          </div>
+          {% endif %}
+          <div class="col-4">
+            <a href="{% url 'presences:statistiques' %}" class="module-btn" style="background:#fef3c7;color:#92400e">
+              <i class="fas fa-chart-line"></i>Stats
+            </a>
+          </div>
+          <div class="col-4">
+            <a href="/notes/bulletins/" class="module-btn" style="background:#f0fdf4;color:#166534">
+              <i class="fas fa-file-alt"></i>Bulletins
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ LIGNE INFÉRIEURE : Évals à venir · Top absents · Inscriptions/Mes élèves -->
+<div class="row g-3 mb-4">
+
+  <!-- ÉVALUATIONS À VENIR -->
+  <div class="col-md-4">
+    <div class="section-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-calendar-day me-2 text-warning"></i>Évaluations à venir</span>
+        <small class="text-muted fw-normal">7 jours</small>
+      </div>
+      <div class="card-body p-0">
+        {% if evals_prochaines %}
+        <div style="padding: 4px 0">
+          {% for ev in evals_prochaines %}
+          <div class="dash-list-item px-3">
+            <div style="width:38px;height:38px;border-radius:10px;background:#fff8e1;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-pencil-alt" style="color:#e8a020;font-size:.85rem"></i>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ ev.matiere.nom }}</div>
+              <div class="text-muted" style="font-size:.7rem">{{ ev.classe.nom }} · {{ ev.date|date:"d/m/Y" }}</div>
+            </div>
+            <span class="badge-statut" style="background:#fff8e1;color:#e8a020;white-space:nowrap">{{ ev.type_evaluation|capfirst }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+          <div class="small">Aucune évaluation prévue<br>dans les 7 prochains jours</div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer text-center">
+        <a href="{% url 'notes:evaluations_liste' %}" class="small text-primary">Toutes les évaluations →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP ABSENTS (non enseignant) / SUIVI (enseignant) -->
+  {% if not est_enseignant %}
+  <div class="col-md-4">
+    <div class="section-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-user-times me-2 text-danger"></i>Top absents (année)</span>
+        <a href="{% url 'presences:suivi' %}" class="small text-muted text-decoration-none">Suivi →</a>
+      </div>
+      <div class="card-body p-0">
+        {% if top_absents %}
+        <div style="padding:4px 0">
+          {% for ta in top_absents %}
+          <div class="dash-list-item px-3">
+            <div class="avatar-sm" style="background:#fee2e2;color:#dc3545">
+              {{ ta.eleve__nom|first }}{{ ta.eleve__prenom|first }}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ ta.eleve__nom }} {{ ta.eleve__prenom }}</div>
+              <div class="text-muted" style="font-size:.7rem">{{ ta.eleve__classe__nom|default:"—" }}</div>
+            </div>
+            <div class="text-center" style="flex-shrink:0">
+              <span class="badge-statut" style="background:#fee2e2;color:#dc3545">{{ ta.nb }} abs.</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+          <div class="small">Aucune absence enregistrée</div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer text-center">
+        <a href="{% url 'presences:statistiques' %}" class="small text-primary">Statistiques de présence →</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- INSCRIPTIONS RÉCENTES / MES ÉLÈVES -->
+  <div class="col-md-4">
+    <div class="section-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <i class="fas fa-{% if est_enseignant %}users{% else %}user-plus{% endif %} me-2 text-primary"></i>
+          {% if est_enseignant %}Mes élèves{% else %}Inscriptions récentes{% endif %}
+        </span>
+        <a href="/eleves/" class="small text-muted text-decoration-none">Tous →</a>
+      </div>
+      <div class="card-body p-0">
+        <div style="padding:4px 0">
+          {% for e in dernieres_inscriptions %}
+          <div class="dash-list-item px-3">
+            {% if e.photo %}
+            <div class="avatar-sm"><img src="{{ e.photo.url }}" alt=""></div>
+            {% else %}
+            <div class="avatar-sm">{{ e.nom|first }}{{ e.prenom|first }}</div>
+            {% endif %}
+            <div style="flex:1;min-width:0">
+              <div class="fw-semibold text-truncate" style="font-size:.82rem">{{ e.nom }} {{ e.prenom }}</div>
+              <div class="text-muted" style="font-size:.7rem">{{ e.classe.nom|default:"—" }} {% if not est_enseignant %}· {{ e.date_inscription|date:"d/m/Y" }}{% endif %}</div>
+            </div>
+            <a href="{% url 'eleves:eleve_dossier' e.pk %}" class="text-muted" style="font-size:.75rem" title="Dossier">
+              <i class="fas fa-folder-open"></i>
+            </a>
+          </div>
+          {% empty %}
+          <div class="text-center py-5 text-muted">
+            <i class="fas fa-inbox fa-2x mb-2"></i>
+            <div class="small">Aucun élève</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ⑥ RÉPARTITION PAR ÉCOLE (non enseignant, plusieurs écoles) -->
+{% if not est_enseignant and ecoles_data|length > 1 %}
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="section-card">
+      <div class="card-header"><i class="fas fa-school me-2 text-primary"></i>Effectifs par école</div>
+      <div class="card-body">
+        {% for e in ecoles_data %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="fw-semibold" style="font-size:.85rem">{{ e.nom }}</span>
+            <small class="text-muted">{{ e.nb }} élève(s)
+              {% if total_eleves %}&nbsp;({% widthratio e.nb total_eleves 100 %}%){% endif %}
+            </small>
+          </div>
+          <div class="prog-wrap">
+            <div class="prog-fill" style="width:{% widthratio e.nb total_eleves 100 %}%;background:#1a3c6e"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="section-card">
+      <div class="card-header"><i class="fas fa-venus-mars me-2 text-primary"></i>Répartition par sexe</div>
+      <div class="card-body d-flex align-items-center gap-4 justify-content-center py-3">
+        <div class="text-center">
+          <div class="fw-bold text-primary" style="font-size:2.6rem">{{ total_garcons }}</div>
+          <div class="text-muted small">Garçons</div>
+          <div class="text-muted" style="font-size:.72rem">
+            {% if total_eleves %}{% widthratio total_garcons total_eleves 100 %}%{% endif %}
+          </div>
+        </div>
+        <div style="width:130px;height:130px;position:relative">
+          <canvas id="chartSexe"></canvas>
+        </div>
+        <div class="text-center">
+          <div class="fw-bold" style="font-size:2.6rem;color:#e83e8c">{{ total_filles }}</div>
+          <div class="text-muted small">Filles</div>
+          <div class="text-muted" style="font-size:.72rem">
+            {% if total_eleves %}{% widthratio total_filles total_eleves 100 %}%{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ── Graphique absences 7 jours ──
+(function() {
+  const labels = {{ absences_7j_labels|safe }};
+  const data   = {{ absences_7j_data|safe }};
+  const max    = Math.max(...data, 1);
+  new Chart(document.getElementById('chartAbsences'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: data.map(v => v === 0 ? '#e9ecef' : (v >= max * .8 ? '#dc3545' : v >= max * .5 ? '#fd7e14' : '#ffc107')),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        label: ctx => ctx.parsed.y + ' absent(s)'
+      }}},
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } },
+          grid: { color: '#f0f0f0' }
+        }
+      }
+    }
+  });
+})();
+
+// ── Donut sexe ──
+{% if total_eleves %}
+new Chart(document.getElementById('chartSexe'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Garçons', 'Filles'],
+    datasets: [{
+      data: [{{ total_garcons }}, {{ total_filles }}],
+      backgroundColor: ['#1a3c6e', '#e83e8c'],
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    cutout: '72%',
+    plugins: { legend: { display: false } },
+    responsive: false,
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-file-alt{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><i class="fas fa-filter me-2 text-primary"></i>Sélectionner une classe et une période</div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label fw-semibold">Classe</label>
+        <select name="classe" class="form-select">
+          <option value="">-- Choisir une classe --</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if request.GET.classe == c.id|stringformat:"s" %}selected{% endif %}>{{ c.ecole.nom|default:"" }} — {{ c.nom }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Période</label>
+        <select name="periode" class="form-select">
+          {% for code, label in periodes %}<option value="{{ code }}" {% if periode == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Afficher</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if classe_selectionnee %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-users me-2 text-primary"></i>{{ classe_selectionnee.nom }} — {{ dict_periodes|default:periode }}</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary">{{ eleves|length }} élèves</span>
+      <a href="{% url 'notes:bulletins_imprimer_classe' classe_selectionnee.pk periode %}"
+         class="btn btn-sm btn-success">
+        <i class="fas fa-print me-1"></i>Imprimer tous les bulletins
+      </a>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" data-paginate>
+        <thead><tr><th>#</th><th>Élève</th><th class="text-center">Bulletin</th></tr></thead>
+        <tbody>
+        {% for eleve in eleves %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td><strong>{{ eleve.nom }} {{ eleve.prenom }}</strong></td>
+          <td class="text-center">
+            <a href="{% url 'notes:bulletin_detail' eleve.pk periode %}" class="btn btn-sm btn-outline-success">
+              <i class="fas fa-file-alt me-1"></i>Voir / Générer
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="3" class="text-center text-muted py-4">Aucun élève dans cette classe</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+{% endif %}
+{% endblock %}

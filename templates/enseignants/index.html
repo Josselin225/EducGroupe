@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-chalkboard-teacher{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'enseignants:matieres_liste' %}" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-book me-1"></i>Matières</a>
+{% if sans_compte > 0 %}
+<form method="post" action="{% url 'enseignants:initialiser_comptes' %}" class="d-inline"
+      onsubmit="return confirm('Créer les comptes pour {{ sans_compte }} enseignant(s) sans compte ? (identifiant = matricule, mot de passe = matricule)')">
+  {% csrf_token %}
+  <button class="btn btn-sm btn-warning me-1">
+    <i class="fas fa-user-plus me-1"></i>Créer {{ sans_compte }} compte(s) manquant(s)
+  </button>
+</form>
+{% endif %}
+<a href="{% url 'enseignants:ajouter' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Nouvel enseignant</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="stat-card" style="border-color:#1a3c6e"><div class="d-flex justify-content-between align-items-center"><div><div class="number text-primary">{{ total }}</div><div class="label">Enseignants actifs</div></div><i class="fas fa-chalkboard-teacher fa-2x text-primary opacity-25"></i></div></div></div>
+  <div class="col-md-4"><div class="stat-card" style="border-color:#1565c0"><div class="d-flex justify-content-between align-items-center"><div><div class="number text-primary">{{ total_hommes }}</div><div class="label">Hommes</div></div><i class="fas fa-male fa-2x text-primary opacity-25"></i></div></div></div>
+  <div class="col-md-4"><div class="stat-card" style="border-color:#e83e8c"><div class="d-flex justify-content-between align-items-center"><div><div class="number text-danger">{{ total_femmes }}</div><div class="label">Femmes</div></div><i class="fas fa-female fa-2x text-danger opacity-25"></i></div></div></div>
+</div>
+<div class="card">
+  <div class="card-header"><i class="fas fa-list me-2 text-primary"></i>Liste du personnel enseignant</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" data-paginate>
+        <thead><tr><th class="d-none d-md-table-cell">Matricule</th><th>Nom & Prénom</th><th>Sexe</th><th class="d-none d-lg-table-cell">Spécialité</th><th class="d-none d-lg-table-cell">Téléphone</th><th class="d-none d-md-table-cell">Compte</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for e in enseignants %}
+        <tr>
+          <td class="d-none d-md-table-cell"><code>{{ e.matricule }}</code></td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% if e.photo %}
+              <img src="{{ e.photo.url }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">
+              {% else %}
+              <div style="width:32px;height:32px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center"><i class="fas fa-user text-muted" style="font-size:.75rem"></i></div>
+              {% endif %}
+              <strong>{{ e.nom }} {{ e.prenom }}</strong>
+            </div>
+          </td>
+          <td>{% if e.sexe == 'M' %}<span class="badge bg-primary">M</span>{% else %}<span class="badge bg-danger">F</span>{% endif %}</td>
+          <td class="d-none d-lg-table-cell"><small class="text-muted">{{ e.specialite|default:"—" }}</small></td>
+          <td class="d-none d-lg-table-cell"><small>{{ e.telephone|default:"—" }}</small></td>
+          <td class="d-none d-md-table-cell">
+            {% if e.user %}
+              <span class="badge {% if e.user.is_active %}bg-success{% else %}bg-danger{% endif %}" title="Identifiant : {{ e.user.username }}">
+                <i class="fas fa-check me-1"></i>{{ e.user.username }}
+              </span>
+            {% else %}
+              <span class="badge bg-secondary"><i class="fas fa-times me-1"></i>Aucun</span>
+            {% endif %}
+          </td>
+          <td><span class="badge {% if e.statut == 'actif' %}bg-success{% elif e.statut == 'conge' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ e.get_statut_display }}</span></td>
+          <td class="d-flex gap-1">
+            <a href="{% url 'enseignants:detail' e.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+            <a href="{% url 'enseignants:modifier' e.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+            <form method="post" action="{% url 'enseignants:statut' e.pk %}" style="display:inline"
+                  onsubmit="return confirm('Changer le statut de {{ e.nom }} ?')">
+              {% csrf_token %}
+              {% if e.statut == 'actif' %}
+              <input type="hidden" name="statut" value="inactif">
+              <button type="submit" class="btn btn-sm btn-outline-warning" title="Désactiver"><i class="fas fa-user-slash"></i></button>
+              {% else %}
+              <input type="hidden" name="statut" value="actif">
+              <button type="submit" class="btn btn-sm btn-outline-success" title="Réactiver"><i class="fas fa-user-check"></i></button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x d-block mb-2"></i>Aucun enseignant enregistré</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+{% endblock %}

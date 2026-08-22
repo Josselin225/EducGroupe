@@ -1,0 +1,41 @@
+# Fichiers secrets — NE JAMAIS VERSIONNER
+.env
+*.env.local
+
+# Base de données
+db.sqlite3
+*.sqlite3
+
+# Médias uploadés
+media/
+
+# Sauvegardes (contiennent la base de données et les médias)
+backups/
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtualenv
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Fichiers statiques collectés
+staticfiles/

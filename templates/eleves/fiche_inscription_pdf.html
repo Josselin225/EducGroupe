@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fiche d'inscription — {{ eleve.nom }} {{ eleve.prenom }}</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    color: #1a1a2e;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ── En-tête ── */
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1a3c6e;
+    color: #ffffff;
+    border-bottom: 3px solid #e8a020;
+  }
+  .header-table td { padding: 8px 12px; vertical-align: middle; }
+  .header-logo-inline {
+    width: 20px; height: 20px; border-radius: 50%;
+    vertical-align: middle; margin-right: 6px;
+  }
+  .ets-sous  { font-size: 8.5pt; color: #ccddee; margin-top: 1px; }
+  .titre-doc {
+    font-size: 13.5pt; font-weight: bold; color: #e8a020;
+    margin-top: 3px; letter-spacing: .4pt;
+  }
+  .badge-annee {
+    display: inline-block; margin-top: 3px;
+    background-color: #e8a020; color: #0d2340;
+    font-size: 7.5pt; font-weight: bold;
+    padding: 1px 10px; border-radius: 9px;
+  }
+  .header-photo-cell { text-align: center; width: 70px; }
+  .header-photo {
+    width: 58px; height: 58px; border-radius: 50%;
+    border: 3px solid #e8a020; background-color: #ffffff;
+  }
+
+  /* ── Bloc matricule ── */
+  .matricule-table {
+    width: 100%; border-collapse: collapse;
+    background-color: #0f2c54;
+  }
+  .matricule-table td { padding: 6px 14px; font-size: 7.5pt; color: #a9c1e6; text-transform: uppercase; letter-spacing: .4pt; }
+  .matricule-table .val { font-size: 11pt; font-weight: bold; color: #ffffff; text-transform: none; letter-spacing: 0; margin-top: 1px; }
+
+  /* ── Sections ── */
+  .section-titre {
+    font-size: 10pt; font-weight: bold; color: #0d6efd;
+    text-transform: uppercase; letter-spacing: .4pt;
+    padding: 10px 0 6px;
+  }
+  .section-titre.orange { color: #e8a020; }
+
+  .section-box {
+    background-color: #f8f9ff; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px;
+  }
+  .section-box.orange { background-color: #fff8f0; }
+
+  .info-table { width: 100%; border-collapse: collapse; }
+  .info-table td {
+    padding: 7px 12px 10px; vertical-align: top; width: 33.33%;
+  }
+  .field-label {
+    font-size: 7.5pt; text-transform: uppercase; color: #6c757d;
+    font-weight: bold; letter-spacing: .4pt;
+  }
+  .field-val {
+    font-size: 10.5pt; font-weight: bold; color: #1a1a2e; margin-top: 2px;
+    border-bottom: 1px solid #dee2e6; padding-bottom: 2px;
+  }
+
+  .parent-table { width: 100%; border-collapse: collapse; }
+  .parent-table td { padding: 7px 12px 10px; vertical-align: top; width: 50%; }
+
+  .observations-box {
+    border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 12px;
+    font-size: 10pt; color: #333; margin-top: 4px;
+  }
+
+  /* ── Engagement ── */
+  .engagement-box {
+    border: 1px solid #dee2e6; background-color: #fbfcfe; border-radius: 4px; padding: 10px 14px; margin-top: 10px;
+  }
+  .engagement-titre { font-size: 9.5pt; font-weight: bold; color: #1a1a2e; margin-bottom: 4px; }
+  .engagement-texte { font-size: 8.5pt; color: #555; line-height: 1.4; }
+
+  .signature-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .signature-table td { width: 33.33%; text-align: center; vertical-align: top; padding: 0 8px; }
+  .signature-label { font-size: 8pt; color: #888; margin-bottom: 30px; }
+  .signature-ligne { border-bottom: 1px solid #999; height: 1px; margin-top: 30px; }
+
+  .footer {
+    text-align: center; font-size: 8pt; color: #aaa;
+    margin-top: 16px; padding-top: 6px; border-top: 1px solid #e0e7f0;
+  }
+</style>
+</head>
+<body>
+
+<!-- EN-TÊTE -->
+<table class="header-table">
+  <tr>
+    <td>
+      <div class="ets-sous">
+        {% if groupe.logo %}
+        <img src="{{ groupe.logo.path }}" width="20" height="20" class="header-logo-inline">
+        {% else %}
+        <img src="{{ logo_placeholder }}" width="20" height="20" class="header-logo-inline">
+        {% endif %}
+        {% if eleve.classe.ecole %}{{ eleve.classe.ecole.nom }}{% endif %}{% if eleve.classe.ecole and groupe.ville %}, {% endif %}{% if groupe.ville %}{{ groupe.ville }}{% endif %}
+      </div>
+      <div class="titre-doc">FICHE D'INSCRIPTION</div>
+      {% if annee %}<span class="badge-annee">Année scolaire {{ annee.libelle }}</span>{% endif %}
+    </td>
+    <td class="header-photo-cell" style="width:70px;">
+      {% if eleve_photo_path %}
+      <img src="{{ eleve_photo_path }}" width="58" height="58" class="header-photo">
+      {% else %}
+      <img src="{{ photo_placeholder }}" width="58" height="58" class="header-photo">
+      {% endif %}
+    </td>
+  </tr>
+</table>
+<table class="matricule-table">
+  <tr>
+    <td style="width:50%;">
+      N° MATRICULE<br><span class="val">{{ eleve.matricule }}</span>
+    </td>
+    <td style="width:50%; text-align:right;">
+      DATE D'INSCRIPTION<br><span class="val">{{ eleve.date_inscription|date:"d/m/Y" }}</span>
+    </td>
+  </tr>
+</table>
+
+<!-- INFORMATIONS ÉLÈVE -->
+<div class="section-titre">INFORMATIONS DE L'ÉLÈVE</div>
+<div class="section-box">
+<table class="info-table">
+  <tr>
+    <td><div class="field-label">NOM</div><div class="field-val">{{ eleve.nom }}</div></td>
+    <td><div class="field-label">PRÉNOM(S)</div><div class="field-val">{{ eleve.prenom }}</div></td>
+    <td><div class="field-label">SEXE</div><div class="field-val">{{ eleve.get_sexe_display }}</div></td>
+  </tr>
+  <tr>
+    <td><div class="field-label">DATE DE NAISSANCE</div><div class="field-val">{{ eleve.date_naissance|date:"d/m/Y" }}</div></td>
+    <td><div class="field-label">LIEU DE NAISSANCE</div><div class="field-val">{{ eleve.lieu_naissance|default:"—" }}</div></td>
+    <td><div class="field-label">NATIONALITÉ</div><div class="field-val">Ivoirienne</div></td>
+  </tr>
+  <tr>
+    <td><div class="field-label">CLASSE AFFECTÉE</div><div class="field-val">{{ eleve.classe|default:"—" }}</div></td>
+    <td><div class="field-label">NIVEAU</div><div class="field-val">{{ eleve.classe.niveau|default:"—" }}</div></td>
+    <td><div class="field-label">ÉCOLE</div><div class="field-val">{{ eleve.classe.ecole|default:"—" }}</div></td>
+  </tr>
+  {% if eleve.classe.enseignant_principal %}
+  <tr>
+    <td colspan="3">
+      <div class="field-label">ENSEIGNANT PRINCIPAL</div>
+      <div class="field-val">{{ eleve.classe.enseignant_principal.nom }} {{ eleve.classe.enseignant_principal.prenom }}</div>
+    </td>
+  </tr>
+  {% endif %}
+</table>
+</div>
+
+<!-- INFORMATIONS PARENT -->
+<div class="section-titre orange">INFORMATIONS DU PARENT / TUTEUR</div>
+<div class="section-box orange">
+<table class="parent-table">
+  <tr>
+    <td><div class="field-label">NOM COMPLET</div><div class="field-val">{{ eleve.nom_parent|default:"—" }}</div></td>
+    <td><div class="field-label">TÉLÉPHONE</div><div class="field-val">{{ eleve.telephone_parent|default:"—" }}</div></td>
+  </tr>
+  <tr>
+    <td><div class="field-label">EMAIL</div><div class="field-val">{{ eleve.email_parent|default:"—" }}</div></td>
+    <td><div class="field-label">ADRESSE</div><div class="field-val">{{ eleve.adresse|default:"—" }}</div></td>
+  </tr>
+</table>
+</div>
+
+{% if eleve.observations %}
+<div class="section-titre">OBSERVATIONS</div>
+<div class="observations-box">{{ eleve.observations }}</div>
+{% endif %}
+
+<!-- ENGAGEMENT -->
+<div class="engagement-box">
+  <div class="engagement-titre">Engagement</div>
+  <div class="engagement-texte">
+    Je soussigné(e), parent/tuteur de l'élève sus-mentionné(e), m'engage à respecter le règlement intérieur
+    de l'établissement et à m'acquitter des frais de scolarité dans les délais impartis.
+  </div>
+  <table class="signature-table">
+    <tr>
+      <td>
+        <div class="signature-label" style="margin-bottom:6px;">Fait à {{ groupe.ville|default:"—" }}</div>
+        <div class="signature-label">Le {{ eleve.date_inscription|date:"d/m/Y" }}</div>
+      </td>
+      <td>
+        <div class="signature-label">Signature du parent / tuteur</div>
+        <div class="signature-ligne"></div>
+      </td>
+      <td>
+        <div class="signature-label">Cachet &amp; signature du directeur</div>
+        <div class="signature-ligne"></div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="footer">
+  {{ groupe.nom }} — Document généré automatiquement — {{ annee }}
+</div>
+
+</body>
+</html>

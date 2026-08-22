@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-clock{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'emploi_du_temps:index' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Emploi du temps</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-plus me-2 text-primary"></i>Ajouter un créneau</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Libellé</label>
+            {{ form.libelle }}
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Heure début</label>
+              {{ form.heure_debut }}
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Heure fin</label>
+              {{ form.heure_fin }}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-save me-1"></i>Ajouter</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-list me-2 text-primary"></i>Créneaux existants</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead><tr><th>Libellé</th><th>Début</th><th>Fin</th><th>Durée</th></tr></thead>
+          <tbody>
+          {% for c in creneaux %}
+          <tr>
+            <td><strong>{{ c.libelle|default:"—" }}</strong></td>
+            <td>{{ c.heure_debut|time:"H:i" }}</td>
+            <td>{{ c.heure_fin|time:"H:i" }}</td>
+            <td class="text-muted small">
+              {% with debut=c.heure_debut fin=c.heure_fin %}{{ c }}{% endwith %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted py-3">Aucun créneau</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

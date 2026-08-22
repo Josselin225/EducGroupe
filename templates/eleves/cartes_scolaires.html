@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-id-card{% endblock %}
+{% block topbar_actions %}
+<button onclick="window.print()" class="btn btn-sm btn-primary"><i class="fas fa-print me-1"></i>Imprimer</button>
+<a href="{% url 'eleves:cartes_scolaires_classe' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+{% endblock %}
+{% block extra_css %}
+/* ── CARTES FORMAT CARTE BANCAIRE (85.6mm × 54mm) ── */
+:root {
+    --carte-w: 85.6mm;
+    --carte-h: 54mm;
+}
+
+.cartes-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-start;
+    padding: 8px;
+}
+
+.carte {
+    width: var(--carte-w);
+    height: var(--carte-h);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: white;
+    border: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+/* En-tête */
+.carte-header {
+    background: linear-gradient(135deg, #1a3c6e 0%, #0d2340 100%);
+    color: white;
+    padding: 3.5mm 4mm;
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    height: 14mm;
+    flex-shrink: 0;
+}
+.carte-header .logo {
+    width: 9mm; height: 9mm;
+    border-radius: 50%;
+    background: rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border: 0.5mm solid rgba(232,160,32,.7);
+}
+.carte-header .logo img { width: 7mm; height: 7mm; object-fit: contain; border-radius: 50%; }
+.carte-header .logo i { font-size: 4mm; color: #e8a020; }
+.carte-header .groupe-nom { font-size: 2.8mm; font-weight: 700; color: #e8a020; line-height: 1.2; }
+.carte-header .ecole-nom  { font-size: 2.2mm; color: rgba(255,255,255,.75); }
+.carte-header .annee {
+    margin-left: auto;
+    font-size: 2mm;
+    background: rgba(232,160,32,.2);
+    color: #e8a020;
+    padding: 1mm 2mm;
+    border-radius: 3mm;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Corps */
+.carte-body {
+    flex: 1;
+    display: flex;
+    padding: 3mm 4mm;
+    gap: 3.5mm;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Photo */
+.carte-photo {
+    width: 18mm;
+    height: 22mm;
+    border-radius: 3mm;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 0.5mm solid #1a3c6e;
+    background: #f0f4f8;
+    display: flex; align-items: center; justify-content: center;
+}
+.carte-photo img { width: 100%; height: 100%; object-fit: cover; }
+.carte-photo .no-photo { font-size: 8mm; color: #adb5bd; }
+
+/* Infos */
+.carte-info { flex: 1; min-width: 0; overflow: hidden; }
+.carte-nom    { font-size: 4mm; font-weight: 700; color: #1a3c6e; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.carte-prenom { font-size: 3.4mm; color: #333; margin-bottom: 2mm; }
+.carte-detail { font-size: 2.8mm; color: #555; display: flex; flex-direction: column; gap: 1mm; }
+.carte-detail span { display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.carte-detail i { width: 3mm; color: #1a3c6e; flex-shrink: 0; }
+
+/* Pied */
+.carte-footer {
+    background: #1a3c6e;
+    color: white;
+    font-size: 2.8mm;
+    font-weight: 700;
+    letter-spacing: 0.8mm;
+    text-align: center;
+    padding: 1.5mm 0;
+    flex-shrink: 0;
+}
+
+/* Bande décorative or */
+.carte::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 14mm;
+    bottom: 6mm;
+    width: 2mm;
+    background: #e8a020;
+    border-radius: 1mm 0 0 1mm;
+}
+
+/* ── IMPRESSION ── */
+@media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    .sidebar, .topbar, .btn, .info-bar, #page-loader { display: none !important; }
+    .main-content { margin-left: 0 !important; }
+    .content-area { padding: 0 !important; }
+    body, html { background: #fff !important; }
+
+    /* En-tête classe visible uniquement à l'impression */
+    .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5mm;
+        padding-bottom: 3mm;
+        border-bottom: 0.5mm solid #1a3c6e;
+        font-family: sans-serif;
+    }
+    .print-header-titre { font-size: 12pt; font-weight: 700; color: #1a3c6e; }
+    .print-header-info  { font-size: 9pt; color: #555; }
+
+    /* Grille 2 colonnes centrée */
+    .cartes-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 85.6mm);
+        gap: 6mm;
+        padding: 0;
+        justify-content: center;
+    }
+
+    /* Zone de découpe avec marques aux coins */
+    .carte-decoupe {
+        padding: 0;
+        position: relative;
+    }
+    /* Marques de coupe aux 4 coins */
+    .carte-decoupe::before,
+    .carte-decoupe::after {
+        content: '';
+        position: absolute;
+        border-color: #bbb;
+        border-style: solid;
+        width: 3mm; height: 3mm;
+    }
+    .carte-decoupe::before { top: -1.5mm; left: -1.5mm; border-width: 0.3mm 0 0 0.3mm; }
+    .carte-decoupe::after  { top: -1.5mm; right: -1.5mm; border-width: 0.3mm 0.3mm 0 0; }
+
+    .carte {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-shadow: none !important;
+        border: 0.2mm solid #ccc !important;
+        break-inside: avoid;
+        width: 85.6mm !important;
+        height: 54mm !important;
+    }
+}
+{% endblock %}
+{% block content %}
+
+<div class="info-bar card mb-3">
+  <div class="card-body py-2 d-flex justify-content-between align-items-center">
+    <span class="text-muted small">
+      <i class="fas fa-id-card me-1"></i>
+      <strong>{{ eleves|length }}</strong> carte(s) — format 85,6 × 54 mm (carte bancaire)
+    </span>
+    <button onclick="window.print()" class="btn btn-sm btn-primary"><i class="fas fa-print me-1"></i>Imprimer</button>
+  </div>
+</div>
+
+<div class="print-header" style="display:none;">
+  <div>
+    <div class="print-header-titre">{{ groupe.nom|default:"Groupe Scolaire" }}</div>
+    <div class="print-header-info">Cartes scolaires — {{ page_title }}</div>
+  </div>
+  <div class="print-header-info">Année scolaire {{ annee.libelle }}</div>
+</div>
+
+<div class="cartes-grid">
+{% for e in eleves %}
+<div class="carte-decoupe">
+<div class="carte">
+
+  <!-- EN-TÊTE -->
+  <div class="carte-header">
+    <div class="logo">
+      {% if groupe.logo %}
+      <img src="{{ groupe.logo.url }}" alt="">
+      {% else %}
+      <i class="fas fa-graduation-cap"></i>
+      {% endif %}
+    </div>
+    <div style="min-width:0;overflow:hidden">
+      <div class="groupe-nom">{{ groupe.sigle|default:groupe.nom|truncatechars:22 }}</div>
+      {% if e.classe.ecole %}<div class="ecole-nom">{{ e.classe.ecole.nom|truncatechars:28 }}</div>{% endif %}
+    </div>
+    {% if annee %}<span class="annee">{{ annee.libelle }}</span>{% endif %}
+  </div>
+
+  <!-- CORPS -->
+  <div class="carte-body">
+    <div class="carte-photo">
+      {% if e.photo %}
+      <img src="{{ e.photo.url }}" alt="{{ e.nom }}">
+      {% else %}
+      <i class="fas fa-user no-photo"></i>
+      {% endif %}
+    </div>
+    <div class="carte-info">
+      <div class="carte-nom">{{ e.nom|upper }}</div>
+      <div class="carte-prenom">{{ e.prenom }}</div>
+      <div class="carte-detail">
+        <span><i class="fas fa-layer-group"></i>{{ e.classe.niveau|default:"—" }} — {{ e.classe.nom }}</span>
+        {% if e.date_naissance %}<span><i class="fas fa-birthday-cake"></i>Né(e) le {{ e.date_naissance|date:"d/m/Y" }}</span>{% endif %}
+        {% if e.telephone_parent %}<span><i class="fas fa-phone"></i>{{ e.telephone_parent }}</span>{% endif %}
+        {% if e.classe.enseignant_principal %}<span><i class="fas fa-chalkboard-teacher"></i>{{ e.classe.enseignant_principal.nom }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- PIED — MATRICULE -->
+  <div class="carte-footer">ÉLÈVE N° {{ e.matricule }}</div>
+
+</div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

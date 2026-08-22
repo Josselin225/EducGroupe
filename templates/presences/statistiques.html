@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-chart-pie{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'presences:appel_selection' %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-clipboard-check me-1"></i>Faire l'appel</a>
+{% endblock %}
+
+{% block content %}
+{# ── Sélecteur de classe ── #}
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-filter me-2 text-primary"></i>Sélectionner une classe</div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Classe</label>
+        <select name="classe" class="form-select">
+          <option value="">-- Choisir une classe --</option>
+          {% for c in classes %}
+          <option value="{{ c.id }}" {% if request.GET.classe == c.id|stringformat:"s" %}selected{% endif %}>{{ c.ecole.nom|default:"" }} — {{ c.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Afficher</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if classe_selectionnee %}
+
+{# ── KPI cards ── #}
+{% with total_eleves=stats_eleves|length %}
+{% comment %}Compute aggregates via template tags{% endcomment %}
+<div class="row g-3 mb-4">
+  {# Total élèves #}
+  <div class="col-6 col-md-3">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-2 fw-bold text-primary">{{ stats_eleves|length }}</div>
+          <div class="text-muted small">Élèves</div>
+        </div>
+        <i class="fas fa-users fa-2x text-primary opacity-25"></i>
+      </div>
+    </div>
+  </div>
+
+  {# Total absences #}
+  <div class="col-6 col-md-3">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-2 fw-bold text-danger" id="kpi-absences">—</div>
+          <div class="text-muted small">Absences totales</div>
+        </div>
+        <i class="fas fa-user-times fa-2x text-danger opacity-25"></i>
+      </div>
+    </div>
+  </div>
+
+  {# Taux présence moyen #}
+  <div class="col-6 col-md-3">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-2 fw-bold text-success" id="kpi-taux">—</div>
+          <div class="text-muted small">Taux présence moyen</div>
+        </div>
+        <i class="fas fa-chart-line fa-2x text-success opacity-25"></i>
+      </div>
+    </div>
+  </div>
+
+  {# Élèves en alerte #}
+  <div class="col-6 col-md-3">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-2 fw-bold text-warning" id="kpi-alertes">—</div>
+          <div class="text-muted small">Élèves en alerte (≥ 5 abs.)</div>
+        </div>
+        <i class="fas fa-exclamation-triangle fa-2x text-warning opacity-25"></i>
+      </div>
+    </div>
+  </div>
+</div>
+{% endwith %}
+
+{# ── Script pour calculer les KPI côté client ── #}
+<script>
+(function () {
+  const stats = [
+    {% for s in stats_eleves %}
+    { absences: {{ s.absences }}, taux: {{ s.taux_presence }}, alerte: {{ s.alerte|yesno:"true,false" }} }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const totalAbs = stats.reduce((a, s) => a + s.absences, 0);
+  const moyTaux = stats.length ? Math.round(stats.reduce((a, s) => a + s.taux, 0) / stats.length) : 100;
+  const alertes = stats.filter(s => s.alerte).length;
+
+  document.getElementById('kpi-absences').textContent = totalAbs;
+  document.getElementById('kpi-taux').textContent = moyTaux + ' %';
+  document.getElementById('kpi-alertes').textContent = alertes;
+})();
+</script>
+
+{# ── Absences par mois ── #}
+{% if absences_par_mois %}
+<div class="card mb-4 shadow-sm">
+  <div class="card-header" style="background:#1a3c6e;color:#fff;">
+    <i class="fas fa-calendar-alt me-2"></i>Absences par mois
+  </div>
+  <div class="card-body">
+    {% with max_nb=0 %}
+    {# find max using script below; render bars with data-nb #}
+    {% for row in absences_par_mois %}
+    <div class="d-flex align-items-center mb-2">
+      <div class="text-muted small me-3" style="width:80px;text-align:right;">{{ row.mois }}</div>
+      <div class="flex-grow-1">
+        <div class="progress" style="height:22px;" title="{{ row.nb }} absence(s)">
+          <div class="progress-bar bg-danger" role="progressbar"
+               data-nb="{{ row.nb }}"
+               style="width:0%;min-width:2px"
+               aria-valuenow="{{ row.nb }}" aria-valuemin="0" aria-valuemax="100">
+            <span class="ms-1 small">{{ row.nb }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% endwith %}
+  </div>
+</div>
+<script>
+(function () {
+  const bars = document.querySelectorAll('.progress-bar[data-nb]');
+  let max = 0;
+  bars.forEach(b => { const v = parseInt(b.dataset.nb, 10); if (v > max) max = v; });
+  bars.forEach(b => {
+    const v = parseInt(b.dataset.nb, 10);
+    b.style.width = (max > 0 ? Math.round(v / max * 100) : 0) + '%';
+  });
+})();
+</script>
+{% endif %}
+
+{# ── Détail par élève ── #}
+<div class="card shadow-sm">
+  <div class="card-header" style="background:#1a3c6e;color:#fff;">
+    <i class="fas fa-table me-2"></i>Détail par élève — {{ classe_selectionnee.nom }}
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle" data-paginate>
+        <thead class="table-light">
+          <tr>
+            <th style="min-width:160px">Élève</th>
+            <th class="text-center d-none d-md-table-cell">Jours<br><small class="text-muted fw-normal">enregistrés</small></th>
+            <th class="text-center text-danger">Absences</th>
+            <th class="text-center" style="color:#e8a020">Retards</th>
+            <th class="text-center text-warning d-none d-md-table-cell">Excusées</th>
+            <th style="min-width:140px">Taux présence</th>
+            <th class="text-center">Alerte</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in stats_eleves %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {# Photo / avatar #}
+              {% if s.eleve.photo %}
+              <img src="{{ s.eleve.photo.url }}" alt="" class="rounded-circle" width="34" height="34" style="object-fit:cover;">
+              {% else %}
+              <span class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                    style="width:34px;height:34px;background:#1a3c6e;font-size:.75rem;flex-shrink:0;">
+                {{ s.eleve.prenom|first|upper }}{{ s.eleve.nom|first|upper }}
+              </span>
+              {% endif %}
+              <div>
+                <div class="fw-semibold">{{ s.eleve.nom }} {{ s.eleve.prenom }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-center text-muted d-none d-md-table-cell">{{ s.total }}</td>
+          <td class="text-center">
+            {% if s.absences > 0 %}
+            <span class="badge bg-danger">{{ s.absences }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if s.retards > 0 %}
+            <span class="badge bg-warning text-dark">{{ s.retards }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
+          <td class="text-center d-none d-md-table-cell">
+            {% if s.excuses > 0 %}
+            <span class="badge bg-secondary">{{ s.excuses }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="flex-grow-1">
+                <div class="progress" style="height:16px;">
+                  {% if s.taux_presence >= 90 %}
+                  <div class="progress-bar bg-success" style="width:{{ s.taux_presence }}%"></div>
+                  {% elif s.taux_presence >= 75 %}
+                  <div class="progress-bar" style="width:{{ s.taux_presence }}%;background:#e8a020;"></div>
+                  {% else %}
+                  <div class="progress-bar bg-danger" style="width:{{ s.taux_presence }}%"></div>
+                  {% endif %}
+                </div>
+              </div>
+              <small class="fw-semibold {% if s.taux_presence >= 90 %}text-success{% elif s.taux_presence >= 75 %}text-warning{% else %}text-danger{% endif %}" style="width:38px;text-align:right;">{{ s.taux_presence }}&nbsp;%</small>
+            </div>
+          </td>
+          <td class="text-center">
+            {% if s.alerte %}
+            <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Alerte</span>
+            {% else %}
+            <span class="text-success"><i class="fas fa-check-circle"></i></span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="7" class="text-center text-muted py-4">Aucun élève actif dans cette classe.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+
+{% endif %}{# classe_selectionnee #}
+{% endblock %}

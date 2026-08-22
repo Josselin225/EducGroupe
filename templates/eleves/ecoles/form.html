@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-school{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-school me-2 text-primary"></i>{{ page_title }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nom de l'école <span class="text-danger">*</span></label>
+            {{ form.nom }}
+            {% if form.nom.errors %}<div class="text-danger small mt-1">{{ form.nom.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Type</label>
+            {{ form.type_ecole }}
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Directeur</label>
+              {{ form.directeur }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Téléphone</label>
+              {{ form.telephone }}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Adresse</label>
+            {{ form.adresse }}
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'eleves:ecoles_liste' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

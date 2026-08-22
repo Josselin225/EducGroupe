@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-chalkboard-teacher{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'enseignants:carte' enseignant.pk %}" class="btn btn-sm btn-outline-info"><i class="fas fa-id-badge me-1"></i>Carte pro</a>
+<a href="{% url 'enseignants:modifier' enseignant.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit me-1"></i>Modifier</a>
+<a href="{% url 'enseignants:index' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card text-center p-3 mb-3">
+      {% if enseignant.photo %}
+      <img src="{{ enseignant.photo.url }}" class="rounded-circle mx-auto mb-3" style="width:100px;height:100px;object-fit:cover">
+      {% else %}
+      <div class="rounded-circle bg-light mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:100px;height:100px"><i class="fas fa-user fa-3x text-muted"></i></div>
+      {% endif %}
+      <h5 class="fw-bold text-primary mb-1">{{ enseignant.nom }} {{ enseignant.prenom }}</h5>
+      <div class="text-muted small mb-2">{{ enseignant.specialite|default:"Enseignant" }}</div>
+      <span class="badge {% if enseignant.statut == 'actif' %}bg-success{% elif enseignant.statut == 'conge' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ enseignant.get_statut_display }}</span>
+    </div>
+    <div class="card">
+      <div class="card-header small fw-bold">Informations</div>
+      <div class="card-body p-3">
+        <div class="mb-2"><div class="text-muted small">Matricule</div><code>{{ enseignant.matricule }}</code></div>
+        <div class="mb-2"><div class="text-muted small">Sexe</div><div>{{ enseignant.get_sexe_display }}</div></div>
+        {% if enseignant.date_naissance %}<div class="mb-2"><div class="text-muted small">Date de naissance</div><div>{{ enseignant.date_naissance|date:"d/m/Y" }}</div></div>{% endif %}
+        {% if enseignant.date_embauche %}<div class="mb-2"><div class="text-muted small">Date d'embauche</div><div>{{ enseignant.date_embauche|date:"d/m/Y" }}</div></div>{% endif %}
+        {% if enseignant.telephone %}<div class="mb-2"><div class="text-muted small">Téléphone</div><div>{{ enseignant.telephone }}</div></div>{% endif %}
+        {% if enseignant.email %}<div class="mb-2"><div class="text-muted small">Email</div><div>{{ enseignant.email }}</div></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+
+    <!-- COMPTE UTILISATEUR -->
+    <div class="card mb-3 border-{% if enseignant.user %}success{% else %}warning{% endif %}">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-user-shield me-2 text-{% if enseignant.user %}success{% else %}warning{% endif %}"></i>Compte de connexion</span>
+        {% if enseignant.user %}
+          <span class="badge {% if enseignant.user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+            {% if enseignant.user.is_active %}Actif{% else %}Désactivé{% endif %}
+          </span>
+        {% else %}
+          <span class="badge bg-warning text-dark">Aucun compte</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if enseignant.user %}
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <div class="text-muted small">Identifiant</div>
+              <code class="fs-6">{{ enseignant.user.username }}</code>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Dernière connexion</div>
+              <div>{{ enseignant.user.last_login|date:"d/m/Y H:i"|default:"Jamais connecté" }}</div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <form method="post" action="{% url 'enseignants:gerer_compte' enseignant.pk %}">
+              {% csrf_token %}<input type="hidden" name="action" value="reinitialiser">
+              <button class="btn btn-sm btn-outline-warning" type="submit"
+                      onclick="return confirm('Réinitialiser le mot de passe à : {{ enseignant.matricule }} ?')">
+                <i class="fas fa-key me-1"></i>Réinitialiser le mot de passe
+              </button>
+            </form>
+            {% if enseignant.user.is_active %}
+            <form method="post" action="{% url 'enseignants:gerer_compte' enseignant.pk %}">
+              {% csrf_token %}<input type="hidden" name="action" value="desactiver">
+              <button class="btn btn-sm btn-outline-danger" type="submit"
+                      onclick="return confirm('Désactiver ce compte ?')">
+                <i class="fas fa-ban me-1"></i>Désactiver le compte
+              </button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'enseignants:gerer_compte' enseignant.pk %}">
+              {% csrf_token %}<input type="hidden" name="action" value="activer">
+              <button class="btn btn-sm btn-success" type="submit">
+                <i class="fas fa-check me-1"></i>Réactiver le compte
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-3">Cet enseignant n'a pas encore de compte de connexion.</p>
+          <form method="post" action="{% url 'enseignants:gerer_compte' enseignant.pk %}">
+            {% csrf_token %}<input type="hidden" name="action" value="creer">
+            <button class="btn btn-primary" type="submit">
+              <i class="fas fa-user-plus me-1"></i>Créer un compte
+            </button>
+            <small class="text-muted ms-2">Identifiant et mot de passe = matricule ({{ enseignant.matricule }})</small>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Classes principales de l'enseignant -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="fas fa-door-open me-2 text-primary"></i>Classes principales</div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for classe in enseignant.classes_principales.all %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">{{ classe.nom }}</div>
+              <small class="text-muted">{{ classe.ecole|default:"—" }} — {{ classe.niveau }}</small>
+            </div>
+            <span class="badge bg-primary">{{ classe.effectif }} élèves</span>
+          </div>
+          {% empty %}
+          <div class="list-group-item text-muted small py-3 text-center">Aucune classe principale assignée</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fas fa-calendar-alt me-2 text-primary"></i>Classes assignées</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Jour</th><th>Créneau</th><th>Matière</th><th>Classe</th><th>École</th></tr></thead>
+            <tbody>
+            {% for c in cours %}
+            <tr>
+              <td>{{ c.get_jour_display }}</td>
+              <td>{{ c.creneau }}</td>
+              <td>{{ c.matiere.nom }}</td>
+              <td>{{ c.classe.nom }}</td>
+              <td><small class="text-muted">{{ c.classe.ecole|default:"—" }}</small></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Aucun cours assigné</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

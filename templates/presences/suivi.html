@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-chart-bar{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><i class="fas fa-filter me-2 text-primary"></i>Sélectionner une classe</div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Classe</label>
+        <select name="classe" class="form-select">
+          <option value="">-- Choisir une classe --</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if request.GET.classe == c.id|stringformat:"s" %}selected{% endif %}>{{ c.ecole.nom|default:"" }} — {{ c.nom }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Afficher</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if classe_selectionnee %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-users me-2 text-primary"></i>{{ classe_selectionnee.nom }} — Suivi des absences</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" data-paginate>
+        <thead>
+          <tr>
+            <th class="d-none d-md-table-cell">#</th><th>Élève</th>
+            <th class="text-center text-danger">Absences</th>
+            <th class="text-center text-warning d-none d-md-table-cell">Excusées</th>
+            <th class="text-center" style="color:#e8a020">Retards</th>
+            <th class="text-center d-none d-md-table-cell">Jours enregistrés</th>
+            <th>Détail</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in rapport %}
+        <tr>
+          <td class="text-muted d-none d-md-table-cell">{{ forloop.counter }}</td>
+          <td><strong>{{ r.eleve.nom }} {{ r.eleve.prenom }}</strong></td>
+          <td class="text-center">
+            {% if r.total_absences > 0 %}
+            <span class="badge bg-danger">{{ r.total_absences }}</span>
+            {% else %}<span class="text-muted">0</span>{% endif %}
+          </td>
+          <td class="text-center d-none d-md-table-cell">
+            {% if r.total_excuses > 0 %}
+            <span class="badge bg-warning text-dark">{{ r.total_excuses }}</span>
+            {% else %}<span class="text-muted">0</span>{% endif %}
+          </td>
+          <td class="text-center">
+            {% if r.total_retards > 0 %}
+            <span class="badge bg-info text-dark">{{ r.total_retards }}</span>
+            {% else %}<span class="text-muted">0</span>{% endif %}
+          </td>
+          <td class="text-center text-muted d-none d-md-table-cell">{{ r.total_jours }}</td>
+          <td>
+            <a href="{% url 'presences:historique_eleve' r.eleve.pk %}" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-history"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="7" class="text-center text-muted py-4">Aucun élève</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+{% endif %}
+{% endblock %}

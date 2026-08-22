@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-print{% endblock %}
+{% block topbar_actions %}
+<button onclick="window.print()" class="btn btn-sm btn-success"><i class="fas fa-print me-1"></i>Imprimer tous ({{ bulletins_data|length }})</button>
+<a href="{% url 'notes:bulletins_liste' %}?classe={{ classe.pk }}&periode={{ periode }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+{% endblock %}
+
+{% block extra_css %}
+:root {
+  --bleu: #1a3c6e;
+  --bleu-clair: #e8f0fb;
+  --or: #e8a020;
+  --vert: #198754;
+  --rouge: #dc3545;
+}
+.bulletin-page {
+  max-width: 900px;
+  margin: 0 auto 40px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  page-break-after: always;
+  break-after: page;
+}
+.bulletin-page:last-child { page-break-after: avoid; break-after: avoid; }
+
+.bul-header {
+  background: linear-gradient(135deg, var(--bleu) 0%, #0d2340 100%);
+  color: #fff;
+  border-radius: 10px 10px 0 0;
+  padding: 18px 24px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.bul-header .logo-zone { display: flex; align-items: center; gap: 12px; }
+.bul-header .logo-cercle {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  border: 2px solid rgba(232,160,32,.5);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.bul-header .logo-cercle img { width: 36px; height: 36px; object-fit: contain; border-radius: 50%; }
+.bul-header .logo-cercle i { font-size: 20px; color: var(--or); }
+.bul-header .ets-nom  { font-size: 15px; font-weight: 700; color: var(--or); }
+.bul-header .ets-sous { font-size: 11px; color: rgba(255,255,255,.7); }
+.bul-header .titre-bul { font-size: 18px; font-weight: 800; letter-spacing: 1px; text-align:right; }
+.bul-header .sous-titre { font-size: 12px; color: rgba(255,255,255,.7); margin-top:2px; text-align:right; }
+.badge-periode {
+  display:inline-block; margin-top:5px;
+  background: var(--or); color: #0d2340;
+  font-size:10px; font-weight:800;
+  padding:2px 10px; border-radius:20px; letter-spacing:.5px;
+}
+
+.bul-eleve {
+  background: #fff; border: 1px solid #e0e7f0; border-top:none;
+  padding: 12px 24px;
+  display: flex; gap: 20px; align-items: center;
+}
+.bul-eleve .photo-zone {
+  width:54px; height:54px; border-radius:50%;
+  border:3px solid var(--bleu); background:var(--bleu-clair);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; overflow:hidden;
+}
+.bul-eleve .photo-zone img { width:100%; height:100%; object-fit:cover; }
+.bul-eleve .photo-zone i   { font-size:22px; color:var(--bleu); opacity:.4; }
+.bul-eleve .infos { flex:1; display:flex; gap:24px; flex-wrap:wrap; }
+.bul-eleve .info-item .label { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:#888; }
+.bul-eleve .info-item .val   { font-size:13px; font-weight:600; color:#222; margin-top:1px; }
+.bul-eleve .stats-zone { display:flex; gap:10px; flex-shrink:0; }
+.stat-bul {
+  text-align:center; padding:8px 14px; border-radius:10px; min-width:78px;
+}
+.stat-bul .sv { font-size:22px; font-weight:800; line-height:1; }
+.stat-bul .sl { font-size:9px; text-transform:uppercase; letter-spacing:.6px; margin-top:2px; opacity:.75; }
+.stat-bul.success { background:#d1fae5; color:#065f46; }
+.stat-bul.danger  { background:#fee2e2; color:#991b1b; }
+.stat-bul.info    { background:var(--bleu-clair); color:var(--bleu); }
+
+.bul-table-wrap { border:1px solid #e0e7f0; border-top:none; border-radius:0 0 10px 10px; overflow:hidden; }
+.bul-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.bul-table thead tr { background:var(--bleu-clair); color:var(--bleu); font-size:10px; text-transform:uppercase; letter-spacing:.5px; }
+.bul-table th { padding:7px 8px; font-weight:700; border-bottom:2px solid #c8d9f0; }
+.bul-table td { padding:7px 8px; border-bottom:1px solid #f0f4f8; vertical-align:middle; }
+.bul-table tbody tr:last-child td { border-bottom:none; }
+.bul-table .col-mat { font-weight:600; color:#1a2b4a; }
+.bul-table .col-coeff { text-align:center; font-size:11px; background:#f0f4f8; color:var(--bleu); font-weight:700; width:44px; }
+.bul-table .col-note { text-align:center; width:52px; }
+.note-chip { display:inline-block; padding:1px 6px; border-radius:12px; font-size:11px; font-weight:600; }
+.note-chip.bon    { background:#d1fae5; color:#065f46; }
+.note-chip.moyen  { background:#fef3c7; color:#92400e; }
+.note-chip.faible { background:#fee2e2; color:#991b1b; }
+.note-chip.absent { background:#fef9c3; color:#713f12; }
+.note-chip.vide   { background:#f3f4f6; color:#9ca3af; }
+.col-moy { text-align:center; width:68px; font-weight:700; font-size:13px; }
+.col-moy.bon    { color:var(--vert); }
+.col-moy.faible { color:var(--rouge); }
+.bul-table tfoot td { background:var(--bleu); color:#fff; font-weight:700; padding:8px 10px; border:none; }
+.bul-table tfoot .moy-gen { font-size:16px; text-align:center; }
+
+.bul-bas { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+.bul-bloc { border:1px solid #e0e7f0; border-radius:10px; padding:12px 16px; background:#fff; }
+.bul-bloc .bloc-titre { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--bleu); margin-bottom:8px; padding-bottom:5px; border-bottom:2px solid var(--bleu-clair); }
+.sig-ligne { border-bottom:1px solid #ccc; height:44px; margin-top:6px; }
+
+/* ── Barre de navigation d'impression ── */
+.print-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: #fff; border-bottom:1px solid #dee2e6;
+  padding: 10px 16px;
+  display: flex; align-items:center; justify-content:space-between;
+  margin-bottom: 24px;
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 7mm; }
+  .sidebar, .topbar, .btn, .no-print, .print-nav { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  .content-area { padding: 0 !important; }
+  body { background: #fff !important; }
+  .bulletin-page { max-width:100%; margin-bottom:0; }
+  .bul-header, .stat-bul, .bul-table tfoot td, .note-chip { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+{% endblock %}
+
+{% block content %}
+
+<!-- Barre de navigation rapide -->
+<div class="print-nav no-print">
+  <span class="fw-semibold text-primary">
+    <i class="fas fa-print me-1"></i>
+    Impression groupée — {{ classe.nom }} — {{ periode_display }}
+    <span class="badge bg-primary ms-2">{{ bulletins_data|length }} bulletins</span>
+  </span>
+  <div class="d-flex gap-2 align-items-center">
+    <span class="text-muted small">Prévisualisation — cliquez Imprimer pour lancer</span>
+    <button onclick="window.print()" class="btn btn-success btn-sm">
+      <i class="fas fa-print me-1"></i>Imprimer tous
+    </button>
+  </div>
+</div>
+
+{% for bd in bulletins_data %}
+<div class="bulletin-page">
+
+  <div class="bul-header">
+    <div class="logo-zone">
+      <div class="logo-cercle">
+        {% if groupe.logo %}<img src="{{ groupe.logo.url }}" alt="">
+        {% else %}<i class="fas fa-graduation-cap"></i>{% endif %}
+      </div>
+      <div>
+        <div class="ets-nom">{{ groupe.nom|default:"Groupe Scolaire" }}</div>
+        {% if bd.eleve.classe.ecole %}<div class="ets-sous">{{ bd.eleve.classe.ecole.nom }}</div>{% endif %}
+        {% if groupe.ville %}<div class="ets-sous">{{ groupe.ville }}</div>{% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="titre-bul">BULLETIN DE NOTES</div>
+      <div class="sous-titre">Année scolaire {{ annee }}</div>
+      <div class="text-end"><span class="badge-periode">{{ periode_display }}</span></div>
+    </div>
+  </div>
+
+  <div class="bul-eleve">
+    <div class="photo-zone">
+      {% if bd.eleve.photo %}<img src="{{ bd.eleve.photo.url }}" alt="">
+      {% else %}<i class="fas fa-user"></i>{% endif %}
+    </div>
+    <div class="infos">
+      <div class="info-item">
+        <div class="label">Nom &amp; Prénom</div>
+        <div class="val">{{ bd.eleve.nom }} {{ bd.eleve.prenom }}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Matricule</div>
+        <div class="val">{{ bd.eleve.matricule }}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Classe</div>
+        <div class="val">{{ bd.eleve.classe }}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Sexe</div>
+        <div class="val">{{ bd.eleve.get_sexe_display }}</div>
+      </div>
+    </div>
+    <div class="stats-zone">
+      <div class="stat-bul {% if bd.moyenne_generale and bd.moyenne_generale >= 10 %}success{% elif bd.moyenne_generale %}danger{% else %}info{% endif %}">
+        <div class="sv">{% if bd.moyenne_generale %}{{ bd.moyenne_generale }}{% else %}—{% endif %}</div>
+        <div class="sl">Moy. / 20</div>
+      </div>
+      <div class="stat-bul info">
+        <div class="sv">{% if bd.rang %}{{ bd.rang }}<sup style="font-size:12px">e</sup>{% else %}—{% endif %}</div>
+        <div class="sl">Rang / {{ total_eleves }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bul-table-wrap">
+    <table class="bul-table">
+      <thead>
+        <tr>
+          <th>Matière</th>
+          <th class="text-center">Coeff</th>
+          {% for data in bd.lignes %}{% if forloop.first %}
+            {% for n in data.notes %}
+            <th class="text-center" style="font-size:9px; min-width:50px;">{{ n.evaluation.intitule|truncatechars:10 }}</th>
+            {% endfor %}
+            {% for i in data.padding %}<th></th>{% endfor %}
+          {% endif %}{% endfor %}
+          <th class="text-center">Moyenne</th>
+          <th class="text-center">Pts × Coeff</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for data in bd.lignes %}
+      <tr>
+        <td class="col-mat">{{ data.matiere.nom }}</td>
+        <td class="col-coeff">{{ data.coefficient }}</td>
+        {% for n in data.notes %}
+        <td class="col-note">
+          {% if n.note and not n.note.absent and n.sur_20 != None %}
+            {% if n.sur_20 >= 14 %}<span class="note-chip bon">{{ n.sur_20 }}</span>
+            {% elif n.sur_20 >= 10 %}<span class="note-chip moyen">{{ n.sur_20 }}</span>
+            {% else %}<span class="note-chip faible">{{ n.sur_20 }}</span>{% endif %}
+          {% elif n.note and n.note.absent %}<span class="note-chip absent">Abs</span>
+          {% else %}<span class="note-chip vide">—</span>{% endif %}
+        </td>
+        {% endfor %}
+        {% for i in data.padding %}<td class="col-note"><span class="note-chip vide">—</span></td>{% endfor %}
+        <td class="col-moy {% if data.moyenne and data.moyenne >= 10 %}bon{% elif data.moyenne %}faible{% endif %}">
+          {% if data.moyenne %}{{ data.moyenne }}{% else %}—{% endif %}
+        </td>
+        <td class="text-center text-muted" style="font-size:11px;">
+          {% if data.moyenne %}{{ data.moyenne|floatformat:2 }} × {{ data.coefficient }}{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="14" class="text-center text-muted py-3">Aucune matière évaluée</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" style="font-size:11px; opacity:.8;">{{ bd.lignes|length }} matière(s)</td>
+          {% for data in bd.lignes %}{% if forloop.first %}{% for n in data.notes %}<td></td>{% endfor %}{% for i in data.padding %}<td></td>{% endfor %}{% endif %}{% endfor %}
+          <td class="moy-gen">{% if bd.moyenne_generale %}{{ bd.moyenne_generale }}/20{% else %}—{% endif %}</td>
+          <td style="text-align:center; font-size:11px; opacity:.8;">Moy. générale</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="bul-bas">
+    <div class="bul-bloc">
+      <div class="bloc-titre"><i class="fas fa-comment-alt me-1"></i>Appréciation du conseil de classe</div>
+      {% if bd.bulletin.appreciation %}
+      <div style="font-style:italic; color:#444; font-size:12px;">{{ bd.bulletin.appreciation }}</div>
+      {% else %}
+      <div style="min-height:40px; color:#bbb; font-size:12px;">— Aucune appréciation saisie —</div>
+      {% endif %}
+    </div>
+    <div class="bul-bloc">
+      <div class="bloc-titre"><i class="fas fa-pen-nib me-1"></i>Signatures</div>
+      <div class="row">
+        <div class="col-6 text-center">
+          <div style="font-size:10px; color:#888; margin-bottom:3px;">Le Directeur</div>
+          <div class="sig-ligne"></div>
+        </div>
+        <div class="col-6 text-center">
+          <div style="font-size:10px; color:#888; margin-bottom:3px;">Parent / Tuteur</div>
+          <div class="sig-ligne"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; font-size:9px; color:#bbb; margin-top:8px; border-top:1px solid #f0f4f8; padding-top:5px;">
+    {{ groupe.nom }} — Document généré automatiquement — {{ annee }}
+  </div>
+
+</div>
+{% empty %}
+<div class="alert alert-warning">Aucun élève actif dans cette classe pour cette période.</div>
+{% endfor %}
+{% endblock %}

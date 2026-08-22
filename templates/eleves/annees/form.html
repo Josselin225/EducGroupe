@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-calendar-check{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-calendar-check me-2 text-primary"></i>{{ page_title }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Libellé <span class="text-danger">*</span></label>
+            {{ form.libelle }}
+            <div class="form-text">Format recommandé : 2025-2026</div>
+            {% if form.libelle.errors %}<div class="text-danger small mt-1">{{ form.libelle.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Date de début <span class="text-danger">*</span></label>
+            {{ form.date_debut }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Date de fin <span class="text-danger">*</span></label>
+            {{ form.date_fin }}
+          </div>
+          {% if not annee %}
+          <div class="alert alert-info small">
+            <i class="fas fa-info-circle me-1"></i>
+            La nouvelle année sera créée comme inactive. Utilisez le bouton <strong>Activer</strong> pour la rendre active.
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'eleves:annees_liste' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

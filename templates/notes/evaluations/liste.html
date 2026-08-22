@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-clipboard-list{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'notes:evaluation_ajouter' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Nouvelle évaluation</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="fas fa-list me-2 text-primary"></i>Évaluations{% if annee %} — {{ annee.libelle }}{% endif %}</span>
+    <form method="get" class="d-flex gap-2 flex-wrap">
+      <select name="classe" class="form-select form-select-sm" style="width:200px" onchange="this.form.submit()">
+        <option value="">-- Toutes les classes --</option>
+        {% for c in classes %}<option value="{{ c.id }}" {% if request.GET.classe == c.id|stringformat:"s" %}selected{% endif %}>{{ c.ecole.nom|default:"" }} — {{ c.nom }}</option>{% endfor %}
+      </select>
+      <select name="periode" class="form-select form-select-sm" style="width:160px" onchange="this.form.submit()">
+        <option value="">-- Toute période --</option>
+        {% for code, label in periodes %}<option value="{{ code }}" {% if request.GET.periode == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" data-paginate>
+        <thead><tr><th>Intitulé</th><th>Type</th><th>Matière</th><th>Classe</th><th>Période</th><th>Date</th><th>Barème</th><th>Coeff.</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for ev in evaluations %}
+        <tr>
+          <td><strong>{{ ev.intitule }}</strong></td>
+          <td><span class="badge bg-secondary">{{ ev.get_type_evaluation_display }}</span></td>
+          <td>{{ ev.matiere.nom }}</td>
+          <td><small>{{ ev.classe.ecole|default:"" }} — {{ ev.classe.nom }}</small></td>
+          <td>{{ ev.get_periode_display }}</td>
+          <td>{{ ev.date|date:"d/m/Y" }}</td>
+          <td>{{ ev.note_max }}</td>
+          <td>{{ ev.coefficient }}</td>
+          <td class="d-flex gap-1">
+            <a href="{% url 'notes:saisie_notes' ev.pk %}" class="btn btn-sm btn-success" title="Saisir notes"><i class="fas fa-pen"></i></a>
+            <a href="{% url 'notes:evaluation_modifier' ev.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'notes:evaluation_supprimer' ev.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="9" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x d-block mb-2"></i>Aucune évaluation</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+{% endblock %}

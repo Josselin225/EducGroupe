@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-book{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'emploi_du_temps:index' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Emploi du temps</a>
+{% endblock %}
+{% block content %}
+
+<!-- Sélecteur de classe -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-3 align-items-center flex-wrap">
+      <label class="fw-semibold mb-0">Classe :</label>
+      <select name="classe" class="form-select" style="width:280px" onchange="this.form.submit()">
+        <option value="">-- Choisir une classe --</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if classe_selectionnee.id == c.id %}selected{% endif %}>
+          {{ c.ecole.nom|default:"" }} — {{ c.nom }} ({{ c.niveau }})
+        </option>
+        {% endfor %}
+      </select>
+      {% if classe_selectionnee %}
+      <span class="badge bg-primary ms-2">{{ attributions|length }} matière(s)</span>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if classe_selectionnee %}
+
+<!-- Enseignant principal -->
+{% if classe_selectionnee.enseignant_principal %}
+<div class="alert alert-success d-flex justify-content-between align-items-center mb-3 py-2">
+  <div>
+    <i class="fas fa-chalkboard-teacher me-2"></i>
+    <strong>Enseignant principal :</strong>
+    {{ classe_selectionnee.enseignant_principal.nom }} {{ classe_selectionnee.enseignant_principal.prenom }}
+    <span class="text-muted small ms-2">— Enseigne toutes les matières de cette classe</span>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="sync_enseignant_principal">
+    <input type="hidden" name="classe_id" value="{{ classe_selectionnee.pk }}">
+    <button type="submit" class="btn btn-sm btn-success"
+            onclick="return confirm('Assigner {{ classe_selectionnee.enseignant_principal.nom }} à toutes les matières ?')">
+      <i class="fas fa-sync me-1"></i>Appliquer à toutes les matières
+    </button>
+  </form>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center mb-3 py-2">
+  <div><i class="fas fa-exclamation-triangle me-2"></i>Aucun enseignant principal assigné à cette classe.</div>
+  <a href="{% url 'eleves:classe_modifier' classe_selectionnee.pk %}" class="btn btn-sm btn-warning">
+    <i class="fas fa-edit me-1"></i>Assigner un enseignant
+  </a>
+</div>
+{% endif %}
+
+<div class="row g-3">
+
+  <!-- MATIÈRES ACTUELLES -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-list me-2 text-primary"></i>Matières de {{ classe_selectionnee.nom }}</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Matière</th><th class="text-center" title="Coefficient pour cette classe">Coeff. (classe)</th><th class="text-center">Heures/sem.</th><th>Enseignant</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+          {% for cm in attributions %}
+          <tr>
+            <td>
+              <strong>{{ cm.matiere.nom }}</strong>
+              <span class="badge bg-light text-dark border ms-1">{{ cm.matiere.code }}</span>
+            </td>
+            <td class="text-center">{{ cm.coefficient }}</td>
+            <td class="text-center">{{ cm.nb_heures_semaine }}h</td>
+            <td>
+              <!-- Modifier enseignant inline -->
+              <form method="post" class="d-flex gap-1 align-items-center">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="modifier">
+                <input type="hidden" name="classe_id" value="{{ classe_selectionnee.pk }}">
+                <input type="hidden" name="cm_id" value="{{ cm.pk }}">
+                <input type="hidden" name="coefficient" value="{{ cm.coefficient }}">
+                <input type="hidden" name="nb_heures" value="{{ cm.nb_heures_semaine }}">
+                <select name="enseignant_id" class="form-select form-select-sm" style="width:160px" onchange="this.form.submit()">
+                  <option value="">-- Aucun --</option>
+                  {% for e in enseignants %}
+                  <option value="{{ e.pk }}" {% if cm.enseignant.pk == e.pk %}selected{% endif %}>{{ e.nom }} {{ e.prenom }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>
+              <form method="post" style="display:inline" onsubmit="return confirm('Retirer {{ cm.matiere.nom }} ?')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="supprimer">
+                <input type="hidden" name="classe_id" value="{{ classe_selectionnee.pk }}">
+                <input type="hidden" name="cm_id" value="{{ cm.pk }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x d-block mb-2"></i>Aucune matière assignée à cette classe
+          </td></tr>
+          {% endfor %}
+          </tbody>
+          {% if attributions %}
+          <tfoot style="background:#f8f9fa">
+            <tr>
+              <td class="fw-semibold">Total</td>
+              <td class="text-center fw-bold">—</td>
+              <td class="text-center fw-bold text-primary">
+                {% with total=0 %}
+                {{ attributions|length }} mat.
+                {% endwith %}
+              </td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- AJOUTER UNE MATIÈRE -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-plus me-2 text-success"></i>Ajouter une matière</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-end mb-2">
+          <a href="{% url 'enseignants:matiere_ajouter' %}?next={{ request.get_full_path }}"
+             class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-plus me-1"></i>Créer une matière
+          </a>
+        </div>
+        {% if matieres_disponibles %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="ajouter">
+          <input type="hidden" name="classe_id" value="{{ classe_selectionnee.pk }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Matière</label>
+            <select name="matiere_id" class="form-select form-select-sm" required>
+              <option value="">-- Choisir --</option>
+              {% for m in matieres_disponibles %}
+              <option value="{{ m.pk }}">{{ m.nom }} ({{ m.code }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Enseignant</label>
+            <select name="enseignant_id" class="form-select form-select-sm">
+              <option value="">-- Aucun --</option>
+              {% for e in enseignants %}
+              <option value="{{ e.pk }}">{{ e.nom }} {{ e.prenom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">Coeff. dans cette classe</label>
+              <input type="number" name="coefficient" class="form-control form-control-sm" value="1" min="1" max="10">
+              <div class="form-text" style="font-size:.65rem">Spécifique à cette classe</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small">Heures/sem.</label>
+              <input type="number" name="nb_heures" class="form-control form-control-sm" value="2" min="1" max="30">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success w-100 btn-sm"><i class="fas fa-plus me-1"></i>Ajouter</button>
+        </form>
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+          <p class="small mb-2">Toutes les matières sont déjà assignées.</p>
+          <a href="{% url 'enseignants:matiere_ajouter' %}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-plus me-1"></i>Créer une nouvelle matière
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Lien vers toutes les matières -->
+    <div class="card mt-3">
+      <div class="card-body py-2 d-flex justify-content-between align-items-center">
+        <small class="text-muted">Gérer toutes les matières</small>
+        <a href="{% url 'enseignants:matieres_liste' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-book me-1"></i>Matières</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% elif classes %}
+<div class="card text-center py-5">
+  <div class="text-muted"><i class="fas fa-book fa-3x mb-3 opacity-25"></i><p>Sélectionnez une classe pour gérer ses matières.</p></div>
+</div>
+{% else %}
+<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Aucune classe trouvée. Créez d'abord une année scolaire et des classes.</div>
+{% endif %}
+{% endblock %}

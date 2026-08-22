@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-user-circle{% endblock %}
+{% block extra_css %}
+.avatar-wrap {
+    width: 110px; height: 110px; border-radius: 50%;
+    overflow: hidden; border: 3px solid #1a3c6e;
+    cursor: pointer; position: relative; margin: 0 auto;
+}
+.avatar-wrap img, .avatar-wrap .avatar-placeholder {
+    width: 100%; height: 100%; object-fit: cover;
+}
+.avatar-wrap .overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .2s;
+    color: white; font-size: .8rem; flex-direction: column; gap: 4px;
+}
+.avatar-wrap:hover .overlay { opacity: 1; }
+.pwd-toggle { cursor: pointer; }
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2" role="alert">
+  <i class="fas fa-{% if msg.tags == 'success' %}check{% else %}info-circle{% endif %} me-1"></i>
+  {{ msg }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="row g-3 justify-content-center">
+
+  <!-- COLONNE GAUCHE : Photo -->
+  <div class="col-md-4">
+    <div class="card text-center p-4">
+      <form method="post" enctype="multipart/form-data" id="form-photo">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="photo">
+        <input type="file" name="photo" id="photo-input" accept="image/*" style="display:none"
+               onchange="document.getElementById('form-photo').submit()">
+
+        <div class="avatar-wrap mb-3" onclick="document.getElementById('photo-input').click()">
+          {% if profile.photo %}
+          <img src="{{ profile.photo.url }}" alt="Photo de profil">
+          {% else %}
+          <div class="avatar-placeholder bg-primary d-flex align-items-center justify-content-center">
+            <i class="fas fa-user fa-3x text-white"></i>
+          </div>
+          {% endif %}
+          <div class="overlay">
+            <i class="fas fa-camera fa-lg"></i>
+            <span>Changer</span>
+          </div>
+        </div>
+        <div class="text-muted small mb-3">Cliquez sur la photo pour la modifier</div>
+      </form>
+
+      <h5 class="fw-bold mb-0">{{ user.get_full_name|default:user.username }}</h5>
+      <div class="text-muted small mb-1"><i class="fas fa-at me-1"></i>{{ user.username }}</div>
+      {% if profile.poste %}<div class="text-muted small">{{ profile.poste }}</div>{% endif %}
+      <hr>
+      <span class="badge {% if user.is_superuser %}bg-danger{% elif user.is_staff %}bg-warning text-dark{% else %}bg-primary{% endif %} mb-2">
+        {% if user.is_superuser %}Super-admin{% elif user.is_staff %}Staff{% else %}Utilisateur{% endif %}
+      </span>
+      <div class="text-muted small">Dernière connexion :</div>
+      <div class="text-muted small fw-semibold">{{ user.last_login|date:"d/m/Y H:i"|default:"—" }}</div>
+    </div>
+  </div>
+
+  <!-- COLONNE DROITE -->
+  <div class="col-md-6">
+
+    <!-- Informations personnelles -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="fas fa-user-edit me-2 text-primary"></i>Informations personnelles</div>
+      <div class="card-body">
+        {% if info_error %}
+        <div class="alert alert-danger py-2 mb-3"><i class="fas fa-times me-1"></i>{{ info_error }}</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="info">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Nom d'utilisateur (identifiant)</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="fas fa-at"></i></span>
+                <input type="text" name="username" class="form-control form-control-sm{% if info_error %} is-invalid{% endif %}"
+                       value="{{ user.username }}" required
+                       pattern="[\w.@+\-]+" title="Lettres, chiffres et @/./+/-/_ uniquement">
+              </div>
+              <div class="form-text">Utilisé pour se connecter. Lettres, chiffres, @, ., +, -, _</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Prénom</label>
+              <input type="text" name="first_name" class="form-control form-control-sm"
+                     value="{{ user.first_name }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Nom</label>
+              <input type="text" name="last_name" class="form-control form-control-sm"
+                     value="{{ user.last_name }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Email</label>
+              <input type="email" name="email" class="form-control form-control-sm"
+                     value="{{ user.email }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Téléphone</label>
+              <input type="text" name="telephone" class="form-control form-control-sm"
+                     value="{{ profile.telephone }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Poste / Fonction</label>
+              <input type="text" name="poste" class="form-control form-control-sm"
+                     value="{{ profile.poste }}" placeholder="Ex : Directeur, Secrétaire...">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="fas fa-save me-1"></i>Enregistrer les informations
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Support technique (admin/staff uniquement) -->
+    {% if user.is_superuser or user.is_staff %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="fas fa-headset me-2 text-primary"></i>Support technique</div>
+      <div class="card-body">
+        <div class="text-muted small mb-3">
+          Ces coordonnées sont affichées à tous les utilisateurs (menu du compte → "Support technique").
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="support">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Nom du contact</label>
+              <input type="text" name="support_nom" class="form-control form-control-sm"
+                     value="{{ groupe.support_nom }}" placeholder="Ex : Kouassi Jean">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Téléphone</label>
+              <input type="text" name="support_telephone" class="form-control form-control-sm"
+                     value="{{ groupe.support_telephone }}" placeholder="Ex : 07 49 79 12 87 / 05 46 59 76 26">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Numéro WhatsApp</label>
+              <input type="text" name="support_whatsapp" class="form-control form-control-sm"
+                     value="{{ groupe.support_whatsapp }}" placeholder="Ex : 07 49 79 12 87">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Email</label>
+              <input type="email" name="support_email" class="form-control form-control-sm"
+                     value="{{ groupe.support_email }}">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="fas fa-save me-1"></i>Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Changer mot de passe -->
+    <div class="card">
+      <div class="card-header"><i class="fas fa-key me-2 text-primary"></i>Changer le mot de passe</div>
+      <div class="card-body">
+        {% if pwd_success %}
+        <div class="alert alert-success py-2"><i class="fas fa-check me-1"></i>Mot de passe modifié avec succès.</div>
+        {% endif %}
+        {% if pwd_error %}
+        <div class="alert alert-danger py-2"><i class="fas fa-times me-1"></i>{{ pwd_error }}</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="password">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Mot de passe actuel</label>
+            <div class="input-group input-group-sm">
+              <input type="password" name="pwd_actuel" id="pwd_actuel" class="form-control form-control-sm{% if pwd_error %} is-invalid{% endif %}" required>
+              <span class="input-group-text pwd-toggle" onclick="togglePwd('pwd_actuel', this)">
+                <i class="fas fa-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Nouveau mot de passe</label>
+            <div class="input-group input-group-sm">
+              <input type="password" name="pwd_nouveau" id="pwd_nouveau" class="form-control form-control-sm" required minlength="8">
+              <span class="input-group-text pwd-toggle" onclick="togglePwd('pwd_nouveau', this)">
+                <i class="fas fa-eye"></i>
+              </span>
+            </div>
+            <div class="form-text">8 caractères minimum.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Confirmer le nouveau mot de passe</label>
+            <div class="input-group input-group-sm">
+              <input type="password" name="pwd_confirm" id="pwd_confirm" class="form-control form-control-sm" required>
+              <span class="input-group-text pwd-toggle" onclick="togglePwd('pwd_confirm', this)">
+                <i class="fas fa-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-sm btn-warning">
+              <i class="fas fa-lock me-1"></i>Changer le mot de passe
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('fa-eye', 'fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('fa-eye-slash', 'fa-eye');
+  }
+}
+</script>
+{% endblock %}

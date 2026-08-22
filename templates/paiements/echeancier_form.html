@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-calendar-alt{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-calendar-alt me-2 text-primary"></i>Générer un échéancier</div>
+      <div class="card-body">
+
+        <!-- Récap facture -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small">Facture</span>
+            <code>{{ facture.numero }}</code>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small">Élève</span>
+            <span class="fw-semibold">{{ facture.eleve.nom }} {{ facture.eleve.prenom }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small">Montant total</span>
+            <span>{{ facture.montant_total|floatformat:0 }} FCFA</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small">Déjà payé</span>
+            <span class="text-success">{{ facture.montant_paye|floatformat:0 }} FCFA</span>
+          </div>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold">Solde à échelonner</span>
+            <span class="fw-bold fs-5 text-danger">{{ solde_restant|floatformat:0 }} FCFA</span>
+          </div>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nombre d'échéances</label>
+            {{ form.nb_tranches }}
+            <div class="form-text">Entre 2 et 12 — le solde sera réparti équitablement.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Date de la 1ère échéance</label>
+            {{ form.date_premiere_tranche }}
+            <div class="form-text">Les suivantes seront espacées d'un mois.</div>
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'paiements:facture_detail' facture.pk %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-magic me-1"></i>Générer</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-id-badge{% endblock %}
+{% block topbar_actions %}
+<button onclick="window.print()" class="btn btn-sm btn-primary"><i class="fas fa-print me-1"></i>Imprimer</button>
+<a href="{% url 'enseignants:detail' enseignant.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+{% endblock %}
+
+{% block extra_css %}
+:root { --w: 85.6mm; --h: 54mm; --bleu: #1a3c6e; --or: #e8a020; }
+
+/* ── CARTE PVC BLANC ÉPURÉ ── */
+.carte-pvc {
+  width: var(--w);
+  height: var(--h);
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  display: flex;
+  flex-direction: row;
+  background: #fff;
+  flex-shrink: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  position: relative;
+}
+
+/* ── PANNEAU GAUCHE ── */
+.pvc-gauche {
+  width: 26mm;
+  background: linear-gradient(180deg, #1a3c6e 0%, #0d2340 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3mm 0 2.5mm;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Ligne dorée verticale séparatrice */
+.pvc-gauche::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 10%; bottom: 10%;
+  width: 0.6mm;
+  background: linear-gradient(to bottom, transparent, var(--or), transparent);
+}
+
+.pvc-gauche .logo-haut {
+  display: flex; flex-direction: column; align-items: center; gap: 1mm;
+}
+.pvc-gauche .logo-haut .cercle {
+  width: 7mm; height: 7mm;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  border: 0.4mm solid rgba(232,160,32,.6);
+  display: flex; align-items: center; justify-content: center;
+}
+.pvc-gauche .logo-haut .cercle img { width: 5.5mm; height: 5.5mm; object-fit: contain; border-radius: 50%; }
+.pvc-gauche .logo-haut .cercle i  { font-size: 3mm; color: var(--or); }
+.pvc-gauche .logo-haut .sigle {
+  font-size: 2mm; font-weight: 800; color: var(--or);
+  letter-spacing: .3mm; text-align: center; line-height: 1.2;
+}
+
+/* Photo rectangulaire */
+.pvc-photo {
+  width: 18mm; height: 20mm;
+  border-radius: 2mm;
+  border: 0.5mm solid rgba(232,160,32,.5);
+  overflow: hidden;
+  background: rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: center;
+}
+.pvc-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pvc-photo i   { font-size: 7mm; color: rgba(255,255,255,.3); }
+
+.pvc-gauche .matricule-bas {
+  font-size: 1.8mm; font-weight: 700;
+  color: rgba(255,255,255,.5);
+  letter-spacing: .3mm; text-align: center;
+}
+.pvc-gauche .matricule-bas span { color: var(--or); }
+
+/* ── PANNEAU DROIT ── */
+.pvc-droite {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 3mm 3.5mm 2.5mm 3.5mm;
+  overflow: hidden;
+  justify-content: space-between;
+}
+
+/* Bandeau label en haut à droite */
+.pvc-label-type {
+  align-self: flex-end;
+  font-size: 1.8mm; font-weight: 800;
+  color: #fff;
+  background: var(--bleu);
+  padding: 0.7mm 2mm; border-radius: 0 0 0 2mm;
+  letter-spacing: .5mm;
+  position: absolute;
+  top: 0; right: 0;
+}
+
+.pvc-droite .corps { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+.pvc-nom    { font-size: 5mm; font-weight: 800; color: var(--bleu); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pvc-prenom { font-size: 3.8mm; font-weight: 400; color: #333; margin-bottom: 1.5mm; }
+
+/* Ligne dorée séparatrice */
+.pvc-separateur {
+  height: 0.4mm;
+  background: linear-gradient(to right, var(--or), transparent);
+  margin-bottom: 2mm;
+  width: 70%;
+}
+
+.pvc-titre  { font-size: 3.1mm; font-weight: 700; color: var(--bleu); margin-bottom: 2mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pvc-ligne {
+  font-size: 2.8mm; color: #444;
+  display: flex; align-items: center; gap: 1.5mm;
+  margin-bottom: 1mm;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pvc-ligne i { font-size: 2.6mm; color: var(--or); width: 2.8mm; flex-shrink: 0; }
+
+/* Pied droit */
+.pvc-pied {
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 0.3mm solid #e0e0e0;
+  padding-top: 1.5mm; margin-top: 1mm;
+}
+.pvc-annee { font-size: 2mm; color: #aaa; }
+.pvc-points { display: flex; gap: 1mm; }
+.pvc-points span {
+  width: 2mm; height: 2mm; border-radius: 50%;
+}
+.pvc-points span:nth-child(1) { background: #ddd; }
+.pvc-points span:nth-child(2) { background: #bbb; }
+.pvc-points span:nth-child(3) { background: var(--bleu); }
+
+/* ── GRILLE ── */
+.cartes-pro-grid { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px; }
+
+@media print {
+  @page { size: A4 portrait; margin: 10mm; }
+  .sidebar, .topbar, .btn, .info-bar { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  .content-area { padding: 0 !important; }
+  body { background: #fff !important; }
+
+  .cartes-pro-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 85.6mm);
+    gap: 6mm;
+    justify-content: center;
+    padding: 0;
+  }
+  .carte-pvc {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    box-shadow: none !important;
+    border: 0.2mm solid #ccc !important;
+    break-inside: avoid;
+    width: 85.6mm !important;
+    height: 54mm !important;
+  }
+}
+{% endblock %}
+
+{% block content %}
+<div class="info-bar card mb-3">
+  <div class="card-body py-2 d-flex justify-content-between align-items-center">
+    <span class="text-muted small"><i class="fas fa-id-badge me-1"></i>Carte PVC — 85,6 × 54 mm — cochez <strong>Graphiques d'arrière-plan</strong> à l'impression</span>
+    <button onclick="window.print()" class="btn btn-sm btn-primary"><i class="fas fa-print me-1"></i>Imprimer</button>
+  </div>
+</div>
+
+<div class="cartes-pro-grid">
+<div class="carte-pvc">
+
+  <!-- ÉTIQUETTE TYPE -->
+  <div class="pvc-label-type">ENSEIGNANT</div>
+
+  <!-- PANNEAU GAUCHE -->
+  <div class="pvc-gauche">
+    <div class="logo-haut">
+      <div class="cercle">
+        {% if groupe.logo %}<img src="{{ groupe.logo.url }}" alt="">
+        {% else %}<i class="fas fa-graduation-cap"></i>{% endif %}
+      </div>
+      <div class="sigle">{{ groupe.sigle|default:groupe.nom|truncatechars:10 }}</div>
+    </div>
+
+    <div class="pvc-photo">
+      {% if enseignant.photo %}<img src="{{ enseignant.photo.url }}" alt="">
+      {% else %}<i class="fas fa-user"></i>{% endif %}
+    </div>
+
+    <div class="matricule-bas">MAT. <span>{{ enseignant.matricule }}</span></div>
+  </div>
+
+  <!-- PANNEAU DROIT -->
+  <div class="pvc-droite">
+    <div class="corps">
+      <div class="pvc-nom">{{ enseignant.nom|upper }}</div>
+      <div class="pvc-prenom">{{ enseignant.prenom }}</div>
+      <div class="pvc-separateur"></div>
+      <div class="pvc-titre">{{ enseignant.specialite|default:"Enseignant" }}</div>
+
+      {% if enseignant.matieres.all %}
+      <div class="pvc-ligne"><i class="fas fa-book"></i>{{ enseignant.matieres.all|join:" · "|truncatechars:28 }}</div>
+      {% endif %}
+      {% if enseignant.telephone %}
+      <div class="pvc-ligne"><i class="fas fa-phone"></i>{{ enseignant.telephone }}</div>
+      {% endif %}
+      {% if enseignant.email %}
+      <div class="pvc-ligne"><i class="fas fa-envelope"></i>{{ enseignant.email }}</div>
+      {% endif %}
+    </div>
+
+    <div class="pvc-pied">
+      <div class="pvc-annee">{% if annee %}{{ annee.libelle }}{% endif %}</div>
+      <div class="pvc-points"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

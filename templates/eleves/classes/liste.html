@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-door-open{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'eleves:classe_ajouter' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Nouvelle classe</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-list me-2 text-primary"></i>Classes{% if annee %} — {{ annee.libelle }}{% endif %}</span>
+    <form method="get" class="d-flex gap-2">
+      <select name="ecole" class="form-select form-select-sm" style="width:200px" onchange="this.form.submit()">
+        <option value="">-- Toutes les écoles --</option>
+        {% for e in ecoles %}<option value="{{ e.id }}" {% if request.GET.ecole == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nom }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" data-paginate>
+        <thead>
+          <tr><th>Nom</th><th>École</th><th>Niveau</th><th>Cycle</th><th>Enseignant principal</th><th>Effectif</th><th>Capacité</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for c in classes %}
+        <tr>
+          <td><strong>{{ c.nom }}</strong></td>
+          <td>{{ c.ecole|default:"—" }}</td>
+          <td>{{ c.niveau }}</td>
+          <td>
+            {% if c.niveau.cycle == 'maternelle' %}
+            <span class="badge bg-warning text-dark">Maternelle</span>
+            {% else %}
+            <span class="badge bg-primary">Primaire</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if c.enseignant_principal %}
+            <div class="d-flex align-items-center gap-2">
+              {% if c.enseignant_principal.photo %}
+              <img src="{{ c.enseignant_principal.photo.url }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover">
+              {% endif %}
+              <span class="small fw-semibold">{{ c.enseignant_principal.nom }} {{ c.enseignant_principal.prenom }}</span>
+            </div>
+            {% else %}
+            <span class="text-muted small">— Non assigné</span>
+            {% endif %}
+          </td>
+          <td><span class="fw-bold text-primary">{{ c.effectif }}</span></td>
+          <td>{{ c.capacite_max }}</td>
+          <td class="d-flex gap-1">
+            <a href="{% url 'eleves:classe_modifier' c.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'eleves:classe_supprimer' c.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x d-block mb-2"></i>Aucune classe pour cette année scolaire</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+{% endblock %}

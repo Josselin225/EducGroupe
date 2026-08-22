@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-folder-open{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'notes:bulletins_liste' %}?classe={{ eleve.classe.pk }}" class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-star me-1"></i>Bulletins</a>
+<a href="{% url 'presences:historique_eleve' eleve.pk %}" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-clipboard-check me-1"></i>Présences</a>
+{% if user_role != 'enseignant' %}
+<a href="{% url 'eleves:eleve_modifier' eleve.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-edit me-1"></i>Modifier</a>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+.dossier-section-title {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #6c757d;
+    font-weight: 600;
+}
+.info-label {
+    font-size: .72rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+.info-val {
+    font-weight: 600;
+    font-size: .95rem;
+}
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <!-- ══════════════════════════════════════════
+       COLONNE GAUCHE — identité
+  ══════════════════════════════════════════ -->
+  <div class="col-lg-4">
+
+    <!-- Carte identité élève -->
+    <div class="card shadow-sm mb-3" style="border-top: 3px solid #1a3c6e">
+      <div class="card-body text-center pt-4">
+        {% if eleve.photo %}
+        <img src="{{ eleve.photo.url }}"
+             style="width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid #1a3c6e"
+             class="mb-3">
+        {% else %}
+        <div style="width:88px;height:88px;border-radius:50%;background:#e9ecef;display:inline-flex;align-items:center;justify-content:center;border:3px solid #1a3c6e" class="mb-3">
+          <i class="fas fa-user fa-2x text-muted"></i>
+        </div>
+        {% endif %}
+        <h5 class="fw-bold mb-0">{{ eleve.nom }} {{ eleve.prenom }}</h5>
+        <div class="text-muted small mb-2"><code>{{ eleve.matricule }}</code></div>
+        <span class="badge {% if eleve.statut == 'actif' %}bg-success{% else %}bg-secondary{% endif %} mb-3">
+          {{ eleve.get_statut_display }}
+        </span>
+
+        <hr class="my-2">
+
+        <div class="row g-2 text-start mt-1">
+          <div class="col-6">
+            <div class="info-label">Classe</div>
+            <div class="info-val">{{ eleve.classe|default:"—" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">École</div>
+            <div class="info-val small">{{ eleve.classe.ecole|default:"—" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Sexe</div>
+            <div class="info-val">{{ eleve.get_sexe_display }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Date de naissance</div>
+            <div class="info-val small">{{ eleve.date_naissance|date:"d/m/Y"|default:"—" }}</div>
+          </div>
+          <div class="col-12">
+            <div class="info-label">Date d'inscription</div>
+            <div class="info-val small">{{ eleve.date_inscription|date:"d/m/Y"|default:"—" }}</div>
+          </div>
+          {% if annee %}
+          <div class="col-12">
+            <div class="info-label">Année scolaire</div>
+            <div class="info-val small">{{ annee.libelle }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte parent -->
+    <div class="card shadow-sm mb-3" style="border-top: 3px solid #e8a020">
+      <div class="card-header bg-transparent border-0 pb-0 pt-3">
+        <span class="dossier-section-title"><i class="fas fa-users me-1"></i>Parent / Tuteur</span>
+      </div>
+      <div class="card-body pt-2">
+        <div class="mb-2">
+          <div class="info-label">Nom complet</div>
+          <div class="info-val">{{ eleve.nom_parent|default:"—" }}</div>
+        </div>
+        <div class="mb-2">
+          <div class="info-label">Téléphone</div>
+          <div class="info-val">
+            {% if eleve.telephone_parent %}
+            <a href="tel:{{ eleve.telephone_parent }}" class="text-decoration-none">
+              <i class="fas fa-phone me-1 text-success" style="font-size:.8rem"></i>{{ eleve.telephone_parent }}
+            </a>
+            {% else %}—{% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Email</div>
+          <div class="info-val">
+            {% if eleve.email_parent %}
+            <a href="mailto:{{ eleve.email_parent }}" class="text-decoration-none text-truncate d-block small">
+              <i class="fas fa-envelope me-1 text-primary" style="font-size:.8rem"></i>{{ eleve.email_parent }}
+            </a>
+            {% else %}—{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /col-lg-4 -->
+
+  <!-- ══════════════════════════════════════════
+       COLONNE DROITE — données académiques
+  ══════════════════════════════════════════ -->
+  <div class="col-lg-8">
+
+    <!-- ── Bulletins ── -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <span class="dossier-section-title"><i class="fas fa-star me-1 text-warning"></i>Résultats par période</span>
+        <a href="{% url 'notes:bulletins_liste' %}?classe={{ eleve.classe.pk }}" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-external-link-alt me-1"></i>Voir tous
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if bulletins %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead style="background:#f8f9fa">
+              <tr>
+                <th class="ps-3">Période</th>
+                <th class="text-center">Moyenne générale</th>
+                <th class="text-center">Rang</th>
+                <th>Appréciation</th>
+                <th class="text-end pe-3">Détail</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for b in bulletins %}
+            <tr>
+              <td class="ps-3 fw-semibold">{{ b.get_periode_display|default:b.periode }}</td>
+              <td class="text-center">
+                {% if b.moyenne_generale is not None %}
+                  {% if b.moyenne_generale >= 14 %}
+                  <span class="badge bg-success fs-6">{{ b.moyenne_generale|floatformat:2 }}</span>
+                  {% elif b.moyenne_generale >= 10 %}
+                  <span class="badge bg-warning text-dark fs-6">{{ b.moyenne_generale|floatformat:2 }}</span>
+                  {% else %}
+                  <span class="badge bg-danger fs-6">{{ b.moyenne_generale|floatformat:2 }}</span>
+                  {% endif %}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if b.rang %}
+                <span class="badge bg-light text-dark border">{{ b.rang }}<sup>e</sup></span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ b.appreciation|default:"—" }}</td>
+              <td class="text-end pe-3">
+                <a href="{% url 'notes:bulletin_detail' eleve.pk b.periode %}" class="btn btn-sm btn-outline-secondary">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="fas fa-star fa-2x d-block mb-2 opacity-25"></i>
+          Aucun bulletin disponible pour cette année.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Présences ── -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <span class="dossier-section-title"><i class="fas fa-clipboard-check me-1 text-info"></i>Suivi des présences</span>
+        <a href="{% url 'presences:historique_eleve' eleve.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-external-link-alt me-1"></i>Historique
+        </a>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="text-center p-2 rounded" style="background:#f0f4ff;border:1px solid #c8d4f0">
+              <div class="fw-bold fs-4 text-primary">{{ presences_stats.total|default:0 }}</div>
+              <div class="small text-muted">Jours enregistrés</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-center p-2 rounded" style="background:#fff0f0;border:1px solid #f0c8c8">
+              <div class="fw-bold fs-4 text-danger">{{ presences_stats.absences|default:0 }}</div>
+              <div class="small text-muted">Absences</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-center p-2 rounded" style="background:#fff8e0;border:1px solid #f0e0a0">
+              <div class="fw-bold fs-4 text-warning">{{ presences_stats.retards|default:0 }}</div>
+              <div class="small text-muted">Retards</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-center p-2 rounded" style="background:#f0fff4;border:1px solid #a8e0b8">
+              <div class="fw-bold fs-4 text-success">{{ presences_stats.excuses|default:0 }}</div>
+              <div class="small text-muted">Excusés</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="small fw-semibold">Taux de présence</span>
+          <span class="fw-bold
+            {% if taux_presence >= 90 %}text-success
+            {% elif taux_presence >= 75 %}text-warning
+            {% else %}text-danger{% endif %}">
+            {{ taux_presence }}%
+          </span>
+        </div>
+        <div class="progress" style="height:10px;border-radius:8px">
+          <div class="progress-bar
+            {% if taux_presence >= 90 %}bg-success
+            {% elif taux_presence >= 75 %}bg-warning
+            {% else %}bg-danger{% endif %}"
+            role="progressbar"
+            style="width:{{ taux_presence }}%"
+            aria-valuenow="{{ taux_presence }}"
+            aria-valuemin="0"
+            aria-valuemax="100">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Paiements ── -->
+    {% if user_role != 'enseignant' %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0">
+        <span class="dossier-section-title"><i class="fas fa-file-invoice-dollar me-1 text-success"></i>Paiements</span>
+      </div>
+      <div class="card-body p-0">
+        {% if factures %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead style="background:#f8f9fa">
+              <tr>
+                <th class="ps-3">N° Facture</th>
+                <th>Type de frais</th>
+                <th class="text-end">Montant total</th>
+                <th class="text-end">Payé</th>
+                <th class="text-center">Statut</th>
+                <th class="pe-3">Échéance</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for f in factures %}
+            <tr>
+              <td class="ps-3"><code class="small">{{ f.numero }}</code></td>
+              <td class="small">{{ f.type_frais.nom|default:"—" }}</td>
+              <td class="text-end fw-semibold">{{ f.montant_total|floatformat:0 }} <span class="text-muted small">FCFA</span></td>
+              <td class="text-end">
+                <span class="{% if f.montant_paye >= f.montant_total %}text-success fw-semibold{% else %}text-muted{% endif %}">
+                  {{ f.montant_paye|floatformat:0 }}
+                </span>
+              </td>
+              <td class="text-center">
+                {% if f.statut == 'paye' %}
+                <span class="badge bg-success">Payé</span>
+                {% elif f.statut == 'partiel' %}
+                <span class="badge bg-warning text-dark">Partiel</span>
+                {% else %}
+                <span class="badge bg-danger">En attente</span>
+                {% endif %}
+              </td>
+              <td class="pe-3 small text-muted">{{ f.date_echeance|date:"d/m/Y"|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="fas fa-file-invoice-dollar fa-2x d-block mb-2 opacity-25"></i>
+          Aucune facture pour cette année.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /col-lg-8 -->
+
+</div><!-- /row -->
+{% endblock %}

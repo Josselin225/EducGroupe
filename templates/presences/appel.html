@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-clipboard-check{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'presences:appel_selection' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Changer</a>
+{% endblock %}
+{% block extra_css %}
+.appel-table { font-size: .85rem; }
+.appel-table th, .appel-table td { padding: .4rem .6rem; vertical-align: middle; }
+.appel-table .form-check-label { font-size: .78rem; }
+.appel-table .form-control-sm { padding: .25rem .5rem; font-size: .78rem; }
+{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-3"><div class="text-muted small">Classe</div><div class="fw-bold">{{ classe.nom }}</div></div>
+      <div class="col-md-3"><div class="text-muted small">École</div><div class="fw-bold">{{ classe.ecole.nom|default:"—" }}</div></div>
+      <div class="col-md-2"><div class="text-muted small">Date</div><div class="fw-bold">{{ date|date:"d/m/Y" }}</div></div>
+      <div class="col-md-4 d-flex gap-3 justify-content-md-end mt-2 mt-md-0">
+        <div class="text-center"><div class="fw-bold text-success fs-5">{{ nb_presents }}</div><div class="small text-muted">Présents</div></div>
+        <div class="text-center"><div class="fw-bold text-danger fs-5">{{ nb_absents }}</div><div class="small text-muted">Absents</div></div>
+        <div class="text-center"><div class="fw-bold fs-5" style="color:#e8a020">{{ nb_retards }}</div><div class="small text-muted">Retards</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-users me-2 text-primary"></i>Feuille d'appel ({{ lignes|length }} élèves)</span>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="tousPresents()">Tous présents</button>
+      <button form="form-appel" type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <form id="form-appel" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 appel-table" data-paginate data-paginate-min="15">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Élève</th>
+              <th style="width:280px">Statut</th>
+              <th>Motif</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for l in lignes %}
+          <tr id="row-{{ l.eleve.pk }}" class="
+            {% if l.statut == 'absent' %}table-danger
+            {% elif l.statut == 'excuse' %}table-warning
+            {% elif l.statut == 'retard' %}table-info
+            {% endif %}">
+            <td class="text-muted">{{ forloop.counter }}</td>
+            <td><strong>{{ l.eleve.nom }} {{ l.eleve.prenom }}</strong></td>
+            <td>
+              <div class="d-flex gap-1 flex-wrap">
+                {% for code, label in statuts %}
+                <div class="form-check form-check-inline mb-0">
+                  <input class="form-check-input statut-radio" type="radio"
+                         name="statut_{{ l.eleve.pk }}"
+                         id="s_{{ l.eleve.pk }}_{{ code }}"
+                         value="{{ code }}"
+                         data-id="{{ l.eleve.pk }}"
+                         {% if l.statut == code %}checked{% endif %}>
+                  <label class="form-check-label small" for="s_{{ l.eleve.pk }}_{{ code }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </td>
+            <td>
+              <input type="text" name="motif_{{ l.eleve.pk }}"
+                     class="form-control form-control-sm"
+                     value="{{ l.motif }}" placeholder="Motif...">
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-transparent" data-pagination-bar></div>
+      <div class="p-3 border-top">
+        <label class="form-label fw-semibold small">Observations générales</label>
+        <textarea name="observations" class="form-control form-control-sm" rows="2" placeholder="Remarques sur la journée..."></textarea>
+      </div>
+      <div class="p-3 d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer l'appel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const COLORS = {
+  present: '', absent: 'table-danger', retard: 'table-info', excuse: 'table-warning'
+};
+document.querySelectorAll('.statut-radio').forEach(radio => {
+  radio.addEventListener('change', function() {
+    const row = document.getElementById(`row-${this.dataset.id}`);
+    row.className = COLORS[this.value] || '';
+  });
+});
+function tousPresents() {
+  document.querySelectorAll('.statut-radio[value="present"]').forEach(r => {
+    r.checked = true; r.dispatchEvent(new Event('change'));
+  });
+}
+</script>
+{% endblock %}

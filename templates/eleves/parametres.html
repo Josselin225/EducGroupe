@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-cog{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    {% if groupe.logo %}
+    <div class="text-center mb-3">
+      <img src="{{ groupe.logo.url }}" style="max-height:80px;max-width:200px;object-fit:contain" class="border rounded p-2">
+    </div>
+    {% endif %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-cog me-2 text-primary"></i>Paramètres du groupe scolaire</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Nom du groupe <span class="text-danger">*</span></label>
+              {{ form.nom }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Sigle</label>
+              {{ form.sigle }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Devise / Slogan</label>
+              {{ form.devise }}
+            </div>
+            <div class="col-12"><hr class="my-0"><p class="fw-semibold text-muted small mt-2">COORDONNÉES</p></div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Téléphone</label>
+              {{ form.telephone }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Email</label>
+              {{ form.email }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Boîte postale</label>
+              {{ form.bp }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Ville</label>
+              {{ form.ville }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Pays</label>
+              {{ form.pays }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Adresse complète</label>
+              {{ form.adresse }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Site web</label>
+              {{ form.site_web }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Logo</label>
+              {{ form.logo }}
+              {% if groupe.logo %}<div class="form-text">Un logo est déjà enregistré. Choisissez un fichier pour le remplacer.</div>{% endif %}
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-4">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

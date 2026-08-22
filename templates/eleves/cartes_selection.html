@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-id-card{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><i class="fas fa-filter me-2 text-primary"></i>Choisir une classe</div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label fw-semibold">Classe</label>
+        <select name="classe" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Choisir une classe --</option>
+          {% for c in classes %}
+          <option value="{{ c.id }}" {% if classe_selectionnee.id == c.id %}selected{% endif %}>
+            {{ c.ecole.nom|default:"" }} — {{ c.nom }} ({{ c.niveau }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if classe_selectionnee %}
+      <div class="col-md-3">
+        <a href="?classe={{ classe_selectionnee.pk }}&imprimer=1"
+           class="btn btn-primary w-100">
+          <i class="fas fa-print me-2"></i>Imprimer toutes les cartes
+        </a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if classe_selectionnee %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-id-card me-2 text-primary"></i>{{ classe_selectionnee.nom }} — {{ eleves|length }} élève(s)</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th></th><th>Élève</th><th>Matricule</th><th>Carte individuelle</th></tr></thead>
+      <tbody>
+      {% for e in eleves %}
+      <tr>
+        <td style="width:44px">
+          {% if e.photo %}
+          <img src="{{ e.photo.url }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">
+          {% else %}
+          <div style="width:36px;height:36px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center">
+            <i class="fas fa-user text-muted" style="font-size:.75rem"></i>
+          </div>
+          {% endif %}
+        </td>
+        <td><strong>{{ e.nom }} {{ e.prenom }}</strong></td>
+        <td><code>{{ e.matricule }}</code></td>
+        <td>
+          <a href="{% url 'eleves:carte_scolaire' e.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-id-card me-1"></i>Voir la carte
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-muted py-4">Aucun élève</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

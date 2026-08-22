@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-file-alt{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'eleves:fiche_inscription_pdf' eleve.pk %}" target="_blank" class="btn btn-sm btn-primary"><i class="fas fa-print me-1"></i>Imprimer</a>
+<a href="{% url 'eleves:index' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+{% endblock %}
+{% block extra_css %}
+.fiche-label { font-size: .75rem; color: #6c757d; text-transform: uppercase; letter-spacing: .5px; }
+.fiche-val { font-weight: 600; border-bottom: 1px solid #dee2e6; min-height: 24px; padding-bottom: 2px; }
+.signature-box { border-bottom: 1px solid #333; height: 56px; }
+
+/* ── EN-TÊTE ── */
+.fiche-banner {
+    background: linear-gradient(135deg, #1a3c6e, #0d2340);
+    color: white;
+    border-radius: 14px 14px 0 0;
+    padding: 18px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.fiche-banner-text { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
+.fiche-banner-logo {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(255,255,255,.12); border: 2px solid var(--secondary);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+}
+.fiche-banner-logo img { width: 100%; height: 100%; object-fit: cover; }
+.fiche-banner-logo i { font-size: 1rem; color: var(--secondary); }
+.fiche-banner-ecole { font-size: .78rem; color: #ccddee; line-height: 1.2; }
+.fiche-banner-titre { font-size: 1.25rem; font-weight: 800; color: var(--secondary); letter-spacing: .3px; margin: 1px 0 0; line-height: 1.15; }
+.fiche-banner-badge { display: inline-block; margin-top: 5px; background: var(--secondary); color: #0d2340; font-size: .68rem; font-weight: 700; padding: 2px 10px; border-radius: 10px; }
+.fiche-banner-photo {
+    width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(255,255,255,.12); border: 3px solid var(--secondary);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.fiche-banner-photo img { width: 100%; height: 100%; object-fit: cover; }
+.fiche-idbar {
+    background: #0f2c54; color: white;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    padding: 8px 24px;
+}
+.fiche-idbar .lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .5px; color: #a9c1e6; }
+.fiche-idbar .val { font-size: .95rem; font-weight: 700; }
+
+/* ── PIED DE PAGE ── */
+.fiche-footer {
+    text-align: center; color: #adb5bd; font-size: .76rem;
+    padding: 14px 0 4px; margin-top: 10px; border-top: 1px solid #eef0f4;
+}
+.engagement-card { background: #fbfcfe; }
+.engagement-card .fiche-label i { color: var(--secondary); }
+
+@media print {
+  @page { size: A4 portrait; margin: 8mm; }
+
+  .sidebar, .topbar, .btn, .no-print { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  .content-area { padding: 0 !important; }
+  body, html { background: #fff !important; }
+
+  .row.justify-content-center { display: block !important; margin: 0 !important; }
+  .col-md-9 { width: 100% !important; max-width: 100% !important; padding: 0 !important; }
+
+  /* Zoom global — tout le contenu réduit pour tenir sur 1 page */
+  .card {
+    border: 2px solid #1a3c6e !important;
+    box-shadow: none !important;
+    zoom: 0.78;
+  }
+  .card-body { padding: 10px 14px !important; }
+
+  .fiche-section { padding: 8px 10px !important; margin-bottom: 6px !important; border: 1px solid #ccc !important; border-radius: 4px !important; }
+  .fiche-section .row > [class*="col-"] { padding: 3px 6px !important; }
+
+  hr { margin: 6px 0 !important; border-width: 2px !important; }
+  .mb-3 { margin-bottom: 6px !important; }
+  .g-3 { --bs-gutter-y: 6px !important; --bs-gutter-x: 8px !important; }
+
+  .fiche-label { font-size: 7.5pt !important; margin-bottom: 1px !important; }
+  .fiche-val   { font-size: 10pt !important; min-height: 20px !important; padding-bottom: 2px !important; }
+  h4, h5       { font-size: 12pt !important; margin-bottom: 2px !important; }
+  .badge       { font-size: 8pt !important; }
+  small, p.small { font-size: 8pt !important; margin-bottom: 2px !important; }
+
+  .signature-box { height: 48px !important; }
+  .mt-4 { margin-top: 8px !important; }
+}
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-9">
+    <div class="card fiche" style="border: none; overflow:hidden">
+
+      <!-- EN-TÊTE -->
+      <div class="fiche-banner">
+        <div class="fiche-banner-text">
+          <div class="fiche-banner-logo">
+            {% if groupe.logo %}
+            <img src="{{ groupe.logo.url }}" alt="Logo">
+            {% else %}
+            <i class="fas fa-graduation-cap"></i>
+            {% endif %}
+          </div>
+          <div>
+            {% if eleve.classe.ecole %}
+            <div class="fiche-banner-ecole">{{ eleve.classe.ecole.nom }}{% if groupe.ville %}, {{ groupe.ville }}{% endif %}</div>
+            {% endif %}
+            <h4 class="fiche-banner-titre">FICHE D'INSCRIPTION</h4>
+            {% if annee %}
+            <span class="fiche-banner-badge">Année scolaire {{ annee.libelle }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="fiche-banner-photo">
+          {% if eleve.photo %}
+          <img src="{{ eleve.photo.url }}" alt="">
+          {% else %}
+          <i class="fas fa-user fa-lg" style="color:rgba(255,255,255,.6)"></i>
+          {% endif %}
+        </div>
+      </div>
+      <div class="fiche-idbar">
+        <div><div class="lbl">N° Matricule</div><div class="val">{{ eleve.matricule }}</div></div>
+        <div class="text-end"><div class="lbl">Date d'inscription</div><div class="val">{{ eleve.date_inscription|date:"d/m/Y" }}</div></div>
+      </div>
+
+      <div class="card-body p-4">
+
+        <!-- INFOS ÉLÈVE -->
+        <div class="p-3 mb-3 fiche-section rounded" style="background:#f8f9ff;border:1px solid #dee2e6">
+          <div class="fw-bold text-primary mb-2"><i class="fas fa-user-graduate me-2"></i>INFORMATIONS DE L'ÉLÈVE</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="fiche-label">Nom</div>
+              <div class="fiche-val">{{ eleve.nom }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Prénom(s)</div>
+              <div class="fiche-val">{{ eleve.prenom }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Sexe</div>
+              <div class="fiche-val">{{ eleve.get_sexe_display }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Date de naissance</div>
+              <div class="fiche-val">{{ eleve.date_naissance|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Lieu de naissance</div>
+              <div class="fiche-val">{{ eleve.lieu_naissance|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Nationalité</div>
+              <div class="fiche-val">Ivoirienne</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Classe affectée</div>
+              <div class="fiche-val text-primary">{{ eleve.classe|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">Niveau</div>
+              <div class="fiche-val">{{ eleve.classe.niveau|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fiche-label">École</div>
+              <div class="fiche-val">{{ eleve.classe.ecole|default:"—" }}</div>
+            </div>
+            {% if eleve.classe.enseignant_principal %}
+            <div class="col-md-6">
+              <div class="fiche-label">Enseignant principal</div>
+              <div class="fiche-val">{{ eleve.classe.enseignant_principal.nom }} {{ eleve.classe.enseignant_principal.prenom }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- INFOS PARENT -->
+        <div class="p-3 mb-3 fiche-section rounded" style="background:#fff8f0;border:1px solid #dee2e6">
+          <div class="fw-bold text-warning mb-2" style="color:#e8a020 !important"><i class="fas fa-users me-2"></i>INFORMATIONS DU PARENT / TUTEUR</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="fiche-label">Nom complet</div>
+              <div class="fiche-val">{{ eleve.nom_parent|default:"—" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="fiche-label">Téléphone</div>
+              <div class="fiche-val">{{ eleve.telephone_parent|default:"—" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="fiche-label">Email</div>
+              <div class="fiche-val">{{ eleve.email_parent|default:"—" }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="fiche-label">Adresse</div>
+              <div class="fiche-val">{{ eleve.adresse|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OBSERVATIONS -->
+        {% if eleve.observations %}
+        <div class="p-3 mb-3 fiche-section rounded" style="border:1px solid #dee2e6">
+          <div class="fiche-label mb-1">Observations</div>
+          <div>{{ eleve.observations }}</div>
+        </div>
+        {% endif %}
+
+        <!-- ENGAGEMENTS & SIGNATURES -->
+        <div class="p-3 fiche-section rounded engagement-card" style="border:1px solid #dee2e6">
+          <div class="fw-bold mb-2 small"><i class="fas fa-file-signature me-2 text-primary"></i>ENGAGEMENT</div>
+          <p class="small text-muted mb-3">
+            Je soussigné(e), parent/tuteur de l'élève sus-mentionné(e), m'engage à respecter le règlement intérieur
+            de l'établissement et à m'acquitter des frais de scolarité dans les délais impartis.
+          </p>
+          <div class="row mt-4">
+            <div class="col-4 text-center">
+              <div class="fiche-label mb-3">Fait à {{ groupe.ville|default:"—" }}</div>
+              <div class="fiche-label">Le {{ eleve.date_inscription|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="fiche-label mb-3">Signature du parent / tuteur</div>
+              <div class="signature-box"></div>
+            </div>
+            <div class="col-4 text-center">
+              <div class="fiche-label mb-3">Cachet & Signature du directeur</div>
+              <div class="signature-box"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PIED DE PAGE -->
+        <div class="fiche-footer">
+          {{ groupe.nom }} — Document généré automatiquement — {{ annee }}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bulletin {{ eleve.nom }} {{ eleve.prenom }} — {{ periode_display }}</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    color: #1a1a2e;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ── En-tête ── */
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1a3c6e;
+    color: #ffffff;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  .header-table td {
+    padding: 10px 14px;
+    vertical-align: middle;
+  }
+  .ets-nom   { font-size: 14pt; font-weight: bold; color: #e8a020; }
+  .ets-sous  { font-size: 9pt; color: #ccddee; }
+  .titre-bul { font-size: 16pt; font-weight: bold; text-align: right; }
+  .sous-titre { font-size: 9pt; color: #ccddee; text-align: right; }
+  .badge-periode {
+    display: inline;
+    background-color: #e8a020;
+    color: #0d2340;
+    font-size: 9pt;
+    font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+
+  /* ── Fiche élève ── */
+  .eleve-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #c8d9f0;
+    border-top: none;
+    margin-bottom: 0;
+  }
+  .eleve-table td {
+    padding: 6px 12px;
+    border-right: 1px solid #e0e7f0;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+  .field-label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    color: #888888;
+    font-weight: bold;
+    letter-spacing: 0.5pt;
+  }
+  .field-val {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #1a2b4a;
+    margin-top: 2px;
+  }
+
+  /* ── Stats (moy / rang) ── */
+  .stat-box {
+    text-align: center;
+    padding: 8px 14px;
+    border: 1px solid #c8d9f0;
+    border-radius: 6px;
+  }
+  .stat-box .sv { font-size: 18pt; font-weight: bold; line-height: 1; }
+  .stat-box .sl { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.5pt; color: #666; }
+  .stat-vert  { background-color: #d1fae5; color: #065f46; }
+  .stat-rouge { background-color: #fee2e2; color: #991b1b; }
+  .stat-bleu  { background-color: #e8f0fb; color: #1a3c6e; }
+
+  /* ── Tableau des notes ── */
+  .sep { height: 8px; }
+  .notes-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    border: 1px solid #c8d9f0;
+  }
+  .notes-table thead td {
+    background-color: #e8f0fb;
+    color: #1a3c6e;
+    font-weight: bold;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.4pt;
+    padding: 6px 8px;
+    border: 1px solid #c8d9f0;
+    text-align: center;
+  }
+  .notes-table thead .col-mat { text-align: left; }
+  .notes-table tbody td {
+    padding: 6px 8px;
+    border: 1px solid #e0e7f0;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .notes-table tbody .col-mat {
+    text-align: left;
+    font-weight: bold;
+    color: #1a2b4a;
+    width: 120px;
+  }
+  .notes-table tbody .col-coeff {
+    font-size: 9pt;
+    font-weight: bold;
+    color: #1a3c6e;
+    background-color: #f0f4f8;
+    width: 36px;
+  }
+  .note-bon   { background-color: #d1fae5; color: #065f46; font-weight: bold; border-radius: 4px; padding: 1px 5px; font-size: 9pt; }
+  .note-moyen { background-color: #fef3c7; color: #92400e; font-weight: bold; border-radius: 4px; padding: 1px 5px; font-size: 9pt; }
+  .note-faible{ background-color: #fee2e2; color: #991b1b; font-weight: bold; border-radius: 4px; padding: 1px 5px; font-size: 9pt; }
+  .note-abs   { background-color: #fef9c3; color: #713f12; font-weight: bold; border-radius: 4px; padding: 1px 5px; font-size: 9pt; }
+  .note-vide  { color: #9ca3af; font-size: 9pt; }
+  .col-moy-bon  { font-weight: bold; font-size: 11pt; color: #065f46; }
+  .col-moy-faible { font-weight: bold; font-size: 11pt; color: #991b1b; }
+  .col-moy-vide   { color: #9ca3af; }
+
+  .notes-table tfoot td {
+    background-color: #1a3c6e;
+    color: #ffffff;
+    font-weight: bold;
+    padding: 8px 10px;
+    border: 1px solid #1a3c6e;
+    text-align: center;
+    font-size: 11pt;
+  }
+
+  /* ── Bas du bulletin ── */
+  .bas-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .bas-table td {
+    vertical-align: top;
+    width: 50%;
+    padding: 4px;
+  }
+  .bloc {
+    border: 1px solid #c8d9f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-height: 70px;
+  }
+  .bloc-titre {
+    font-size: 8.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+    color: #1a3c6e;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid #e8f0fb;
+    margin-bottom: 8px;
+  }
+  .sig-ligne {
+    border-bottom: 1px solid #ccc;
+    height: 36px;
+    margin-top: 6px;
+  }
+  .sig-label { font-size: 8.5pt; color: #888; text-align: center; }
+
+  /* ── Pied de page ── */
+  .footer {
+    text-align: center;
+    font-size: 8pt;
+    color: #aaa;
+    margin-top: 12px;
+    padding-top: 6px;
+    border-top: 1px solid #e0e7f0;
+  }
+</style>
+</head>
+<body>
+
+<!-- EN-TÊTE -->
+<table class="header-table">
+  <tr>
+    <td style="width:55%;">
+      <div class="ets-nom">{{ groupe.nom|default:"Groupe Scolaire" }}</div>
+      {% if eleve.classe.ecole %}<div class="ets-sous">{{ eleve.classe.ecole.nom }}</div>{% endif %}
+      {% if groupe.ville %}<div class="ets-sous">{{ groupe.ville }}</div>{% endif %}
+    </td>
+    <td style="width:45%;">
+      <div class="titre-bul">BULLETIN DE NOTES</div>
+      <div class="sous-titre">Année scolaire {{ annee }}</div>
+      <div style="text-align:right; margin-top:4px;"><span class="badge-periode">{{ periode_display }}</span></div>
+    </td>
+  </tr>
+</table>
+
+<!-- FICHE ÉLÈVE -->
+<table class="eleve-table">
+  <tr>
+    <td style="width:30%;">
+      <div class="field-label">Nom &amp; Prénom</div>
+      <div class="field-val">{{ eleve.nom }} {{ eleve.prenom }}</div>
+    </td>
+    <td style="width:18%;">
+      <div class="field-label">Matricule</div>
+      <div class="field-val">{{ eleve.matricule }}</div>
+    </td>
+    <td style="width:22%;">
+      <div class="field-label">Classe</div>
+      <div class="field-val">{{ eleve.classe }}</div>
+    </td>
+    <td style="width:10%;">
+      <div class="field-label">Sexe</div>
+      <div class="field-val">{{ eleve.get_sexe_display }}</div>
+    </td>
+    <td style="width:10%; border-right:none;">
+      <table style="border-collapse:collapse; margin:auto;">
+        <tr>
+          <td style="padding-right:6px;">
+            <div class="stat-box {% if moyenne_generale and moyenne_generale >= 10 %}stat-vert{% elif moyenne_generale %}stat-rouge{% else %}stat-bleu{% endif %}">
+              <div class="sv">{% if moyenne_generale %}{{ moyenne_generale }}{% else %}—{% endif %}</div>
+              <div class="sl">Moy/20</div>
+            </div>
+          </td>
+          <td>
+            <div class="stat-box stat-bleu">
+              <div class="sv">{% if rang %}{{ rang }}{% else %}—{% endif %}</div>
+              <div class="sl">Rang/{{ total_eleves }}</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<div class="sep"></div>
+
+<!-- TABLEAU DES NOTES -->
+<table class="notes-table">
+  <thead>
+    <tr>
+      <td class="col-mat">Matière</td>
+      <td>Coeff</td>
+      {% for data in lignes %}{% if forloop.first %}
+        {% for n in data.notes %}
+        <td style="min-width:52px; font-size:7.5pt;">{{ n.evaluation.intitule|truncatechars:10 }}</td>
+        {% endfor %}
+        {% for i in data.padding %}<td></td>{% endfor %}
+      {% endif %}{% endfor %}
+      <td style="width:60px;">Moyenne</td>
+      <td style="width:80px;">Pts × Coeff</td>
+    </tr>
+  </thead>
+  <tbody>
+  {% for data in lignes %}
+  <tr>
+    <td class="col-mat">{{ data.matiere.nom }}</td>
+    <td class="col-coeff">{{ data.coefficient }}</td>
+    {% for n in data.notes %}
+    <td>
+      {% if n.note and not n.note.absent and n.sur_20 != None %}
+        {% if n.sur_20 >= 14 %}<span class="note-bon">{{ n.sur_20 }}</span>
+        {% elif n.sur_20 >= 10 %}<span class="note-moyen">{{ n.sur_20 }}</span>
+        {% else %}<span class="note-faible">{{ n.sur_20 }}</span>{% endif %}
+      {% elif n.note and n.note.absent %}<span class="note-abs">Abs</span>
+      {% else %}<span class="note-vide">—</span>{% endif %}
+    </td>
+    {% endfor %}
+    {% for i in data.padding %}<td><span class="note-vide">—</span></td>{% endfor %}
+    <td class="{% if data.moyenne and data.moyenne >= 10 %}col-moy-bon{% elif data.moyenne %}col-moy-faible{% else %}col-moy-vide{% endif %}">
+      {% if data.moyenne %}{{ data.moyenne }}{% else %}—{% endif %}
+    </td>
+    <td style="font-size:9pt; color:#555;">
+      {% if data.moyenne %}{{ data.moyenne|floatformat:2 }} × {{ data.coefficient }}{% endif %}
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="14" style="text-align:center; color:#999; padding:12px;">Aucune matière évaluée pour cette période</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2" style="font-size:9pt; text-align:left; opacity:.8;">{{ lignes|length }} matière(s)</td>
+      {% for data in lignes %}{% if forloop.first %}{% for n in data.notes %}<td></td>{% endfor %}{% for i in data.padding %}<td></td>{% endfor %}{% endif %}{% endfor %}
+      <td style="font-size:13pt;">{% if moyenne_generale %}{{ moyenne_generale }}/20{% else %}—{% endif %}</td>
+      <td style="font-size:9pt; opacity:.8;">Moy. générale</td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- APPRÉCIATION & SIGNATURES -->
+<table class="bas-table">
+  <tr>
+    <td>
+      <div class="bloc">
+        <div class="bloc-titre">Appréciation du conseil de classe</div>
+        {% if bulletin.appreciation %}
+          <div style="font-style:italic; color:#444; font-size:10pt;">{{ bulletin.appreciation }}</div>
+        {% else %}
+          <div style="color:#bbb; font-size:9pt;">— Aucune appréciation saisie —</div>
+        {% endif %}
+      </div>
+    </td>
+    <td>
+      <div class="bloc">
+        <div class="bloc-titre">Signatures</div>
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="width:50%; text-align:center;">
+              <div class="sig-label">Le Directeur</div>
+              <div class="sig-ligne"></div>
+            </td>
+            <td style="width:50%; text-align:center;">
+              <div class="sig-label">Parent / Tuteur</div>
+              <div class="sig-ligne"></div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<div class="footer">
+  {{ groupe.nom }} — Document généré automatiquement — {{ annee }}
+</div>
+
+</body>
+</html>

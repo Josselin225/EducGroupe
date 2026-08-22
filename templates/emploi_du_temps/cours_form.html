@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-calendar-plus{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-calendar-plus me-2 text-primary"></i>{{ page_title }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Classe <span class="text-danger">*</span></label>
+              {{ form.classe }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Matière <span class="text-danger">*</span></label>
+              {{ form.matiere }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Enseignant</label>
+              {{ form.enseignant }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Salle</label>
+              {{ form.salle }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Jour <span class="text-danger">*</span></label>
+              {{ form.jour }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Créneau <span class="text-danger">*</span></label>
+              {{ form.creneau }}
+            </div>
+          </div>
+          {% if form.errors %}
+          <div class="alert alert-danger mt-3 small">
+            {% for field, errors in form.errors.items %}{% for e in errors %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2 justify-content-end mt-4">
+            <a href="{% url 'emploi_du_temps:index' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

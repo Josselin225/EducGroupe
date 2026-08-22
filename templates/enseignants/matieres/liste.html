@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-book{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'enseignants:matiere_ajouter' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Nouvelle matière</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><i class="fas fa-book me-2 text-primary"></i>Matières</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0" data-paginate>
+      <thead><tr><th>Nom</th><th>Code</th><th class="text-center">Coefficient</th><th class="d-none d-md-table-cell">Description</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for m in matieres %}
+      <tr>
+        <td><strong>{{ m.nom }}</strong></td>
+        <td><span class="badge bg-secondary">{{ m.code }}</span></td>
+        <td class="text-center fw-bold">{{ m.coefficient }}</td>
+        <td class="d-none d-md-table-cell"><small class="text-muted">{{ m.description|truncatechars:60|default:"—" }}</small></td>
+        <td><a href="{% url 'enseignants:matiere_modifier' m.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr data-empty-row><td colspan="5" class="text-center text-muted py-4">Aucune matière</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+{% endblock %}

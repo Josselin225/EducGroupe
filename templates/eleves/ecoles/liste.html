@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-school{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'eleves:ecole_ajouter' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Nouvelle école</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  {% for ecole in ecoles %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h6 class="fw-bold text-primary mb-1">{{ ecole.nom }}</h6>
+            <span class="badge {% if ecole.type_ecole == 'maternelle' %}bg-warning text-dark{% elif ecole.type_ecole == 'primaire' %}bg-primary{% else %}bg-success{% endif %}">
+              {{ ecole.get_type_ecole_display }}
+            </span>
+          </div>
+          <i class="fas fa-school fa-2x text-primary opacity-25"></i>
+        </div>
+        {% if ecole.directeur %}
+        <div class="text-muted small mb-1"><i class="fas fa-user me-1"></i>{{ ecole.directeur }}</div>
+        {% endif %}
+        {% if ecole.telephone %}
+        <div class="text-muted small mb-1"><i class="fas fa-phone me-1"></i>{{ ecole.telephone }}</div>
+        {% endif %}
+        {% if ecole.adresse %}
+        <div class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1"></i>{{ ecole.adresse|truncatechars:60 }}</div>
+        {% endif %}
+        <hr class="my-2">
+        <div class="d-flex justify-content-between text-center">
+          <div><div class="fw-bold text-primary">{{ ecole.nb_classes }}</div><div class="small text-muted">Classes</div></div>
+          <div><div class="fw-bold text-success">{{ ecole.nb_eleves }}</div><div class="small text-muted">Élèves</div></div>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent d-flex gap-2">
+        <a href="{% url 'eleves:ecole_modifier' ecole.pk %}" class="btn btn-sm btn-outline-primary flex-fill"><i class="fas fa-edit me-1"></i>Modifier</a>
+        <a href="{% url 'eleves:ecole_supprimer' ecole.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="card text-center py-5">
+      <div class="card-body text-muted">
+        <i class="fas fa-school fa-3x mb-3 opacity-25"></i>
+        <p class="mb-3">Aucune école enregistrée.</p>
+        <a href="{% url 'eleves:ecole_ajouter' %}" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Ajouter une école</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-clipboard-check{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-pen me-2 text-primary"></i>Choisir une classe et une date</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Classe <span class="text-danger">*</span></label>
+            <select name="classe" class="form-select" required>
+              <option value="">-- Choisir une classe --</option>
+              {% for c in classes %}
+              <option value="{{ c.id }}">{{ c.ecole.nom|default:"" }} — {{ c.nom }} ({{ c.niveau }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
+            <input type="date" name="date" class="form-control" value="{{ aujourd_hui }}" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-arrow-right me-2"></i>Faire l'appel</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

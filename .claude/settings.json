@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs wc -l)",
+      "Bash(python -c \"import django; print\\(django.__version__\\)\")",
+      "Bash(python manage.py check)",
+      "Bash(python manage.py migrate --run-syncdb)",
+      "Bash(python manage.py makemigrations eleves)",
+      "Bash(python manage.py migrate)",
+      "Bash(python manage.py shell -c ' *)",
+      "PowerShell(Get-Process -Name python -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Id 4336, 10400, 10436, 11512, 11856, 13424 -Force)"
+    ]
+  }
+}

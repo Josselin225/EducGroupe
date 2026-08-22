@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-calendar-alt{% endblock %}
+{% block topbar_actions %}
+{% if user_role != 'enseignant' %}
+<a href="{% url 'emploi_du_temps:creneaux' %}" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-clock me-1"></i>Créneaux</a>
+<a href="{% url 'emploi_du_temps:cours_ajouter' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Ajouter un cours</a>
+{% endif %}
+{% endblock %}
+{% block extra_css %}
+.grille-cell { min-width: 130px; vertical-align: middle !important; }
+.cours-card { background: #e8f0fe; border-left: 3px solid #1a3c6e; border-radius: 6px; padding: 6px 8px; font-size: .82rem; }
+.cours-card .matiere { font-weight: 600; color: #1a3c6e; }
+.cours-card .enseignant { color: #555; }
+{% endblock %}
+{% block content %}
+<!-- Sélecteur de classe -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-3 align-items-center flex-wrap">
+      <label class="fw-semibold mb-0">Classe :</label>
+      <select name="classe" class="form-select" style="width:250px" onchange="this.form.submit()">
+        <option value="">-- Choisir une classe --</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if classe_selectionnee.id == c.id %}selected{% endif %}>
+          {{ c.ecole.nom|default:"" }} — {{ c.nom }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if classe_selectionnee %}
+      <span class="text-muted small">{{ classe_selectionnee.niveau }} | {{ classe_selectionnee.effectif }} élèves</span>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if classe_selectionnee %}
+<!-- GRILLE -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-table me-2 text-primary"></i>Emploi du temps — {{ classe_selectionnee.nom }}</span>
+    {% if user_role != 'enseignant' %}
+    <a href="{% url 'emploi_du_temps:cours_ajouter' %}?classe={{ classe_selectionnee.pk }}" class="btn btn-sm btn-outline-primary">
+      <i class="fas fa-plus me-1"></i>Ajouter
+    </a>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0" style="min-width:700px">
+        <thead style="background:#1a3c6e;color:white">
+          <tr>
+            <th style="width:110px">Créneau</th>
+            {% for num, jour in jours %}<th class="text-center grille-cell">{{ jour }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+        {% if grille_rows %}
+          {% for row in grille_rows %}
+          <tr>
+            <td class="fw-semibold text-center small" style="background:#f8f9fa">
+              {% if row.creneau.libelle %}{{ row.creneau.libelle }}<br>{% endif %}
+              <span class="text-muted" style="font-size:.75rem">{{ row.creneau.heure_debut|time:"H:i" }} - {{ row.creneau.heure_fin|time:"H:i" }}</span>
+            </td>
+            {% for cell in row.cells %}
+            <td class="grille-cell text-center p-1">
+              {% if cell.cours %}
+              <div class="cours-card">
+                <div class="matiere">{{ cell.cours.matiere.nom }}</div>
+                {% if cell.cours.enseignant %}<div class="enseignant"><i class="fas fa-user fa-xs me-1"></i>{{ cell.cours.enseignant.nom }}</div>{% endif %}
+                {% if cell.cours.salle %}<div class="text-muted" style="font-size:.75rem"><i class="fas fa-door-open fa-xs me-1"></i>{{ cell.cours.salle }}</div>{% endif %}
+                {% if user_role != 'enseignant' %}
+                <div class="mt-1 d-flex gap-1 justify-content-center">
+                  <a href="{% url 'emploi_du_temps:cours_modifier' cell.cours.pk %}" class="btn btn-outline-primary" style="font-size:.7rem;padding:1px 5px"><i class="fas fa-edit"></i></a>
+                  <form method="post" action="{% url 'emploi_du_temps:cours_supprimer' cell.cours.pk %}" style="display:inline" onsubmit="return confirm('Supprimer ?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger" style="font-size:.7rem;padding:1px 5px"><i class="fas fa-times"></i></button>
+                  </form>
+                </div>
+                {% endif %}
+              </div>
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        {% elif creneaux %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Aucun cours planifié. <a href="{% url 'emploi_du_temps:cours_ajouter' %}">Ajouter un cours</a></td></tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Aucun créneau horaire défini. <a href="{% url 'emploi_du_temps:creneaux' %}">Créer des créneaux</a></td></tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% elif classes %}
+<div class="card text-center py-5">
+  <div class="text-muted"><i class="fas fa-calendar-alt fa-3x mb-3 opacity-25"></i><p>Sélectionnez une classe pour afficher son emploi du temps.</p></div>
+</div>
+{% else %}
+<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Aucune classe trouvée pour l'année en cours.</div>
+{% endif %}
+{% endblock %}

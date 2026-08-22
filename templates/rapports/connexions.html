@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block icon %}fas fa-shield-alt{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'rapports:index' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Rapports</a>
+{% endblock %}
+
+{% block extra_css %}
+.ip-code {
+    font-family: 'Courier New', monospace;
+    font-size: .85rem;
+    background: var(--table-head-bg);
+    color: var(--primary);
+    padding: 2px 7px;
+    border-radius: 5px;
+}
+[data-bs-theme="dark"] .ip-code { color: #6fa8ff; }
+.page-code {
+    font-family: 'Courier New', monospace;
+    font-size: .78rem;
+    color: #6c757d;
+    max-width: 220px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.journal-table { font-size: .82rem; }
+.journal-table th, .journal-table td { padding: .4rem .6rem; vertical-align: middle; }
+.journal-table .badge { font-size: .68rem; padding: .3em .55em; font-weight: 600; }
+{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-header d-flex align-items-center justify-content-between py-2">
+        <span class="small"><i class="fas fa-filter me-2 text-muted"></i>Filtres</span>
+        {% if type_filtre or search %}
+        <a href="{% url 'rapports:connexions' %}" class="btn btn-sm btn-outline-secondary py-0">
+            <i class="fas fa-times me-1"></i>Effacer les filtres
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-7">
+                <label class="form-label small text-muted mb-1">Rechercher un utilisateur</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" name="q" value="{{ search }}" class="form-control"
+                           placeholder="Nom d'utilisateur…">
+                </div>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small text-muted mb-1">Type d'événement</label>
+                <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">— Tous les événements —</option>
+                    <option value="connexion"    {% if type_filtre == 'connexion'    %}selected{% endif %}>Connexion réussie</option>
+                    <option value="deconnexion"  {% if type_filtre == 'deconnexion'  %}selected{% endif %}>Déconnexion</option>
+                    <option value="echec"        {% if type_filtre == 'echec'        %}selected{% endif %}>Tentative échouée</option>
+                    <option value="consultation" {% if type_filtre == 'consultation' %}selected{% endif %}>Consultation</option>
+                    <option value="creation"     {% if type_filtre == 'creation'     %}selected{% endif %}>Création</option>
+                    <option value="modification" {% if type_filtre == 'modification' %}selected{% endif %}>Modification</option>
+                    <option value="suppression"  {% if type_filtre == 'suppression'  %}selected{% endif %}>Suppression</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="fas fa-list me-2 text-muted"></i>
+            Journal d'activité
+            <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count }} entrée{{ page_obj.paginator.count|pluralize }}</span>
+        </span>
+        {% if request.user.is_superuser or request.user.is_staff %}
+        <div class="d-flex gap-2">
+            <button type="submit" form="form-journal-selection" id="btn-supprimer-selection" disabled
+                    class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-trash me-1"></i>Supprimer la sélection
+            </button>
+            <form method="post" action="{% url 'rapports:purger_journal' %}"
+                  onsubmit="return confirm('Supprimer définitivement les entrées de plus de 90 jours ?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-broom me-1"></i>Purger les anciennes entrées
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <form id="form-journal-selection" method="post" action="{% url 'rapports:supprimer_journal_selection' %}"
+              onsubmit="return confirm('Supprimer définitivement les entrées sélectionnées ?')">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 journal-table">
+                <thead>
+                    <tr>
+                        {% if request.user.is_superuser or request.user.is_staff %}
+                        <th style="width:34px"><input type="checkbox" id="check-all"></th>
+                        {% endif %}
+                        <th>Date / Heure</th>
+                        <th>Événement</th>
+                        <th>Utilisateur</th>
+                        <th class="d-none d-sm-table-cell">Page</th>
+                        <th class="d-none d-lg-table-cell">Adresse IP</th>
+                        <th class="d-none d-md-table-cell">Navigateur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in page_obj %}
+                    <tr>
+                        {% if request.user.is_superuser or request.user.is_staff %}
+                        <td><input type="checkbox" name="ids" value="{{ log.pk }}" class="row-check"></td>
+                        {% endif %}
+                        <td class="text-nowrap">
+                            <strong>{{ log.date|date:"d/m/Y" }}</strong>
+                            <span class="text-muted">{{ log.date|time:"H:i:s" }}</span>
+                        </td>
+                        <td>
+                            {% if log.type_event == 'connexion' %}
+                                <span class="badge bg-success"><i class="fas fa-sign-in-alt me-1"></i>Connexion</span>
+                            {% elif log.type_event == 'deconnexion' %}
+                                <span class="badge bg-secondary"><i class="fas fa-sign-out-alt me-1"></i>Déconnexion</span>
+                            {% elif log.type_event == 'echec' %}
+                                <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Échec</span>
+                            {% elif log.type_event == 'consultation' %}
+                                <span class="badge" style="background:#0d6efd"><i class="fas fa-eye me-1"></i>Consultation</span>
+                            {% elif log.type_event == 'creation' %}
+                                <span class="badge bg-success"><i class="fas fa-plus me-1"></i>Création</span>
+                            {% elif log.type_event == 'modification' %}
+                                <span class="badge" style="background:#e8a020"><i class="fas fa-edit me-1"></i>Modification</span>
+                            {% elif log.type_event == 'suppression' %}
+                                <span class="badge bg-danger"><i class="fas fa-trash me-1"></i>Suppression</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.user %}
+                                <i class="fas fa-user text-muted me-1"></i>
+                                <strong>{{ log.user.get_full_name|default:log.user.username }}</strong>
+                                {% if log.user.username != log.username_tente and log.username_tente %}
+                                    <br><small class="text-muted">Saisi : {{ log.username_tente }}</small>
+                                {% endif %}
+                            {% elif log.username_tente %}
+                                <i class="fas fa-user-times text-danger me-1"></i>
+                                <span class="text-danger">{{ log.username_tente }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-sm-table-cell">
+                            {% if log.path %}
+                                <span class="page-code" title="{{ log.path }}">{{ log.path }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                            {% if log.ip %}
+                                <span class="ip-code">{{ log.ip }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            {% if log.user_agent %}
+                                <span title="{{ log.user_agent }}" style="font-size:.85rem;color:#6c757d">
+                                    <i class="fas fa-desktop me-1 opacity-50"></i>{{ log.navigateur_simplifie }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                            Aucun enregistrement trouvé.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        </form>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+            Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+        </small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if type_filtre %}&type={{ type_filtre }}{% endif %}{% if search %}&q={{ search }}{% endif %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if type_filtre %}&type={{ type_filtre }}{% endif %}{% if search %}&q={{ search }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if type_filtre %}&type={{ type_filtre }}{% endif %}{% if search %}&q={{ search }}{% endif %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+{% if request.user.is_superuser or request.user.is_staff %}
+<script>
+(function () {
+    const checkAll = document.getElementById('check-all');
+    const rowChecks = document.querySelectorAll('.row-check');
+    const btnSupprimer = document.getElementById('btn-supprimer-selection');
+
+    function majBouton() {
+        const nbCoches = document.querySelectorAll('.row-check:checked').length;
+        btnSupprimer.disabled = nbCoches === 0;
+        btnSupprimer.innerHTML = nbCoches
+            ? `<i class="fas fa-trash me-1"></i>Supprimer la sélection (${nbCoches})`
+            : `<i class="fas fa-trash me-1"></i>Supprimer la sélection`;
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', () => {
+            rowChecks.forEach(cb => { cb.checked = checkAll.checked; });
+            majBouton();
+        });
+    }
+    rowChecks.forEach(cb => cb.addEventListener('change', () => {
+        if (!cb.checked && checkAll) checkAll.checked = false;
+        majBouton();
+    }));
+})();
+</script>
+{% endif %}
+{% endblock %}

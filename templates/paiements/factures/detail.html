@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-file-invoice{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'paiements:facture_pdf' facture.pk %}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fas fa-print me-1"></i>Imprimer</a>
+<a href="{% url 'paiements:factures_liste' %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-7">
+    <!-- FACTURE -->
+    <div class="card mb-3" style="border-top: 4px solid #1a3c6e">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h5 class="fw-bold text-primary mb-1">FACTURE</h5>
+            <code class="fs-6">{{ facture.numero }}</code>
+          </div>
+          <span class="badge fs-6 {% if facture.statut == 'paye' %}bg-success{% elif facture.statut == 'partiel' %}bg-warning text-dark{% elif facture.statut == 'annule' %}bg-danger{% else %}bg-secondary{% endif %}">
+            {{ facture.get_statut_display }}
+          </span>
+        </div>
+        <hr>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6"><div class="text-muted small">Élève</div><div class="fw-bold">{{ facture.eleve.nom }} {{ facture.eleve.prenom }}</div></div>
+          <div class="col-md-6"><div class="text-muted small">Matricule</div><div>{{ facture.eleve.matricule }}</div></div>
+          <div class="col-md-6"><div class="text-muted small">Classe</div><div>{{ facture.eleve.classe|default:"—" }}</div></div>
+          <div class="col-md-6"><div class="text-muted small">Année scolaire</div><div>{{ facture.annee_scolaire }}</div></div>
+        </div>
+        <table class="table table-sm">
+          <thead><tr><th>Désignation</th><th class="text-end">Montant</th></tr></thead>
+          <tbody>
+            <tr><td>{{ facture.type_frais.nom }}</td><td class="text-end">{{ facture.montant_total|floatformat:0 }} FCFA</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="fw-bold"><td>Total</td><td class="text-end">{{ facture.montant_total|floatformat:0 }} FCFA</td></tr>
+            <tr class="text-success"><td>Montant payé</td><td class="text-end">{{ facture.montant_paye|floatformat:0 }} FCFA</td></tr>
+            <tr class="{% if facture.solde_restant > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+              <td>Solde restant</td><td class="text-end">{{ facture.solde_restant|floatformat:0 }} FCFA</td>
+            </tr>
+          </tfoot>
+        </table>
+        {% if facture.date_echeance %}
+        <div class="text-muted small">Échéance : {{ facture.date_echeance|date:"d/m/Y" }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ÉCHÉANCIER -->
+    {% if facture.echeances.exists %}
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-calendar-alt me-2 text-primary"></i>Échéancier</span>
+        <div class="d-flex gap-1">
+          <a href="{% url 'paiements:echeancier_pdf' facture.pk %}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fas fa-print me-1"></i>Imprimer</a>
+          <a href="{% url 'paiements:echeancier_generer' facture.pk %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-redo me-1"></i>Recréer</a>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Tranche</th><th>Échéance</th><th class="text-end">Montant</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+          {% for e in facture.echeances.all %}
+          <tr class="{% if e.est_paye %}table-success{% endif %}">
+            <td class="fw-bold">Tranche {{ e.numero }}</td>
+            <td>{{ e.date_echeance|date:"d/m/Y" }}</td>
+            <td class="text-end">{{ e.montant|floatformat:0 }} FCFA</td>
+            <td>
+              {% if e.est_paye %}
+              <span class="badge bg-success">Payée</span>
+              {% else %}
+              <span class="badge bg-secondary">En attente</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if e.est_paye %}
+              <a href="{% url 'paiements:recu_paiement' e.paiement.pk %}" class="btn btn-sm btn-outline-success"><i class="fas fa-receipt"></i> Reçu</a>
+              {% else %}
+              <a href="{% url 'paiements:echeance_payer' e.pk %}" class="btn btn-sm btn-success"><i class="fas fa-money-bill"></i> Payer</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card mb-3">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>Aucun échéancier défini</span>
+        {% if facture.statut != 'paye' %}
+        <a href="{% url 'paiements:echeancier_generer' facture.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-calendar-alt me-1"></i>Créer un échéancier</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- HISTORIQUE PAIEMENTS -->
+    <div class="card">
+      <div class="card-header"><i class="fas fa-history me-2 text-primary"></i>Paiements effectués</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Date</th><th>Mode</th><th>Référence</th><th class="text-end">Montant</th><th>Reçu par</th><th></th></tr></thead>
+            <tbody>
+            {% for p in paiements %}
+            <tr>
+              <td>{{ p.date_paiement|date:"d/m/Y" }}</td>
+              <td>{{ p.get_mode_paiement_display }}</td>
+              <td><small class="text-muted">{{ p.reference|default:"—" }}</small></td>
+              <td class="text-end fw-bold text-success">{{ p.montant|floatformat:0 }} FCFA</td>
+              <td><small>{{ p.recu_par|default:"—" }}</small></td>
+              <td class="d-flex gap-1">
+                <a href="{% url 'paiements:recu_paiement' p.pk %}" class="btn btn-sm btn-outline-success" title="Reçu"><i class="fas fa-receipt"></i></a>
+                <form method="post" action="{% url 'paiements:paiement_supprimer' p.pk %}" style="display:inline" onsubmit="return confirm('Supprimer ce paiement ?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-2">Aucun paiement enregistré</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULAIRE PAIEMENT -->
+  {% if facture.statut != 'paye' and facture.statut != 'annule' %}
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-plus-circle me-2 text-success"></i>Enregistrer un paiement</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Montant (FCFA) <span class="text-danger">*</span></label>
+            {{ form.montant }}
+            <div class="form-text">Solde restant : <strong class="text-danger">{{ facture.solde_restant|floatformat:0 }} FCFA</strong></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Date</label>
+            {{ form.date_paiement }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mode de paiement</label>
+            {{ form.mode_paiement }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Référence</label>
+            {{ form.reference }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">N° Reçu</label>
+            {{ form.recu_numero }}
+          </div>
+          <button type="submit" class="btn btn-success w-100"><i class="fas fa-check me-1"></i>Valider le paiement</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Facture {{ facture.numero }}</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    color: #1a1a2e;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ── En-tête ── */
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1a3c6e;
+    color: #ffffff;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  .header-table td {
+    padding: 10px 14px;
+    vertical-align: middle;
+  }
+  .ets-nom   { font-size: 14pt; font-weight: bold; color: #e8a020; }
+  .ets-sous  { font-size: 9pt; color: #ccddee; }
+  .titre-doc { font-size: 16pt; font-weight: bold; text-align: right; }
+  .sous-titre { font-size: 9pt; color: #ccddee; text-align: right; }
+  .badge-statut {
+    display: inline;
+    font-size: 9pt;
+    font-weight: bold;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .st-paye    { background-color: #d1fae5; color: #065f46; }
+  .st-partiel { background-color: #fef3c7; color: #92400e; }
+  .st-annule  { background-color: #fee2e2; color: #991b1b; }
+  .st-attente { background-color: #e5e7eb; color: #374151; }
+
+  /* ── Fiche élève ── */
+  .eleve-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #c8d9f0;
+    border-top: none;
+    margin-bottom: 0;
+  }
+  .eleve-table td {
+    padding: 6px 12px;
+    border-right: 1px solid #e0e7f0;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+  .field-label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    color: #888888;
+    font-weight: bold;
+    letter-spacing: 0.5pt;
+  }
+  .field-val {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #1a2b4a;
+    margin-top: 2px;
+  }
+
+  .sep { height: 10px; }
+
+  /* ── Tableaux ── */
+  .doc-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 10pt;
+    border: 1px solid #c8d9f0;
+  }
+  .doc-table thead td {
+    background-color: #e8f0fb;
+    color: #1a3c6e;
+    font-weight: bold;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.4pt;
+    padding: 6px 8px;
+    border: 1px solid #c8d9f0;
+  }
+  .doc-table tbody td {
+    padding: 6px 8px;
+    border: 1px solid #e0e7f0;
+    vertical-align: middle;
+  }
+  .doc-table tfoot td {
+    padding: 7px 8px;
+    border: 1px solid #e0e7f0;
+    font-weight: bold;
+  }
+  .txt-end { text-align: right; }
+  .txt-center { text-align: center; }
+  .row-total   { background-color: #1a3c6e; color: #ffffff; font-size: 11pt; }
+  .row-paye    { color: #065f46; }
+  .row-restant-du   { color: #991b1b; }
+  .row-restant-solde { color: #888; }
+
+  .bloc-titre {
+    font-size: 9pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+    color: #1a3c6e;
+    padding: 8px 0 4px;
+  }
+
+  .badge-mini { border-radius: 10px; padding: 2px 8px; font-size: 8.5pt; font-weight: bold; white-space: nowrap; }
+  .bd-paye { background-color: #d1fae5; color: #065f46; }
+  .bd-attente { background-color: #e5e7eb; color: #374151; }
+
+  /* ── Bas de page ── */
+  .bas-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+  }
+  .bas-table td { vertical-align: top; width: 50%; padding: 4px; }
+  .bloc {
+    border: 1px solid #c8d9f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-height: 60px;
+  }
+  .sig-ligne { border-bottom: 1px solid #ccc; height: 36px; margin-top: 6px; }
+  .sig-label { font-size: 8.5pt; color: #888; text-align: center; }
+
+  .footer {
+    text-align: center;
+    font-size: 8pt;
+    color: #aaa;
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid #e0e7f0;
+  }
+</style>
+</head>
+<body>
+
+<!-- EN-TÊTE -->
+<table class="header-table">
+  <tr>
+    <td style="width:55%;">
+      <div class="ets-nom">{{ groupe.nom|default:"Groupe Scolaire" }}</div>
+      <div class="ets-sous">{% if facture.eleve.classe.ecole %}{{ facture.eleve.classe.ecole.nom }}{% endif %}{% if facture.eleve.classe.ecole and groupe.ville %}, {% endif %}{% if groupe.ville %}{{ groupe.ville }}{% endif %}</div>
+    </td>
+    <td style="width:45%;">
+      <div class="titre-doc">FACTURE</div>
+      <div class="sous-titre">N° {{ facture.numero }}</div>
+      <div style="text-align:right; margin-top:4px;">
+        <span class="badge-statut {% if facture.statut == 'paye' %}st-paye{% elif facture.statut == 'partiel' %}st-partiel{% elif facture.statut == 'annule' %}st-annule{% else %}st-attente{% endif %}">
+          {{ facture.get_statut_display }}
+        </span>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<!-- FICHE ÉLÈVE -->
+<table class="eleve-table">
+  <tr>
+    <td style="width:34%;">
+      <div class="field-label">Élève</div>
+      <div class="field-val">{{ facture.eleve.nom }} {{ facture.eleve.prenom }}</div>
+    </td>
+    <td style="width:18%;">
+      <div class="field-label">Matricule</div>
+      <div class="field-val">{{ facture.eleve.matricule }}</div>
+    </td>
+    <td style="width:18%;">
+      <div class="field-label">Classe</div>
+      <div class="field-val">{{ facture.eleve.classe.nom|default:"—" }}</div>
+    </td>
+    <td style="width:20%; border-right:none;">
+      <div class="field-label">Année scolaire</div>
+      <div class="field-val">{{ facture.annee_scolaire }}</div>
+    </td>
+  </tr>
+</table>
+
+<div class="sep"></div>
+
+<!-- DÉTAIL FACTURE -->
+<table class="doc-table">
+  <thead>
+    <tr>
+      <td>Désignation</td>
+      <td class="txt-end">Montant (FCFA)</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>{{ facture.type_frais.nom }}</td><td class="txt-end">{{ facture.montant_total|floatformat:0 }}</td></tr>
+  </tbody>
+  <tfoot>
+    <tr class="row-total"><td>Total</td><td class="txt-end">{{ facture.montant_total|floatformat:0 }}</td></tr>
+    <tr><td class="row-paye">Montant payé</td><td class="txt-end row-paye">{{ facture.montant_paye|floatformat:0 }}</td></tr>
+    <tr>
+      <td class="{% if facture.solde_restant > 0 %}row-restant-du{% else %}row-restant-solde{% endif %}">Solde restant</td>
+      <td class="txt-end {% if facture.solde_restant > 0 %}row-restant-du{% else %}row-restant-solde{% endif %}">{{ facture.solde_restant|floatformat:0 }}</td>
+    </tr>
+  </tfoot>
+</table>
+{% if facture.date_echeance %}
+<div style="font-size:9pt; color:#666; margin-top:6px;">Échéance : {{ facture.date_echeance|date:"d/m/Y" }}</div>
+{% endif %}
+
+<!-- ÉCHÉANCIER -->
+{% if facture.echeances.exists %}
+<div class="bloc-titre">Échéancier</div>
+<table class="doc-table">
+  <thead>
+    <tr>
+      <td style="width:110px;">Tranche</td>
+      <td style="width:110px;">Échéance</td>
+      <td class="txt-center" style="width:100px; white-space:nowrap;">Statut</td>
+      <td class="txt-end" style="white-space:nowrap;">Montant (FCFA)</td>
+    </tr>
+  </thead>
+  <tbody>
+  {% for e in facture.echeances.all %}
+    <tr>
+      <td>Tranche {{ e.numero }}</td>
+      <td>{{ e.date_echeance|date:"d/m/Y" }}</td>
+      <td class="txt-center" style="white-space:nowrap;">
+        <span class="badge-mini {% if e.est_paye %}bd-paye{% else %}bd-attente{% endif %}">
+          {% if e.est_paye %}Payée{% else %}En attente{% endif %}
+        </span>
+      </td>
+      <td class="txt-end">{{ e.montant|floatformat:0 }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<!-- HISTORIQUE DES PAIEMENTS -->
+<div class="bloc-titre">Paiements effectués</div>
+<table class="doc-table">
+  <thead>
+    <tr>
+      <td style="width:75px;">Date</td>
+      <td style="width:85px;">Mode</td>
+      <td>Référence</td>
+      <td class="txt-end" style="width:130px; white-space:nowrap;">Montant (FCFA)</td>
+      <td style="width:90px;">Reçu par</td>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in paiements %}
+    <tr>
+      <td>{{ p.date_paiement|date:"d/m/Y" }}</td>
+      <td>{{ p.get_mode_paiement_display }}</td>
+      <td>{{ p.reference|default:"—" }}</td>
+      <td class="txt-end row-paye">{{ p.montant|floatformat:0 }}</td>
+      <td>{{ p.recu_par|default:"—" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="txt-center" style="color:#999;">Aucun paiement enregistré</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<!-- SIGNATURES -->
+<table class="bas-table">
+  <tr>
+    <td>
+      <div class="bloc">
+        <div class="sig-label" style="text-align:left; font-weight:bold; color:#1a3c6e; text-transform:uppercase;">Le Directeur</div>
+        <div class="sig-ligne"></div>
+      </div>
+    </td>
+    <td>
+      <div class="bloc">
+        <div class="sig-label" style="text-align:left; font-weight:bold; color:#1a3c6e; text-transform:uppercase;">Parent / Tuteur</div>
+        <div class="sig-ligne"></div>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<div class="footer">
+  {{ groupe.nom }} — Document généré automatiquement — {{ facture.annee_scolaire }}
+</div>
+
+</body>
+</html>

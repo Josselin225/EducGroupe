@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-pen{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-3"><div class="text-muted small">Matière</div><div class="fw-bold">{{ evaluation.matiere }}</div></div>
+      <div class="col-md-3"><div class="text-muted small">Classe</div><div class="fw-bold">{{ evaluation.classe }}</div></div>
+      <div class="col-md-2"><div class="text-muted small">Période</div><div class="fw-bold">{{ evaluation.get_periode_display }}</div></div>
+      <div class="col-md-2"><div class="text-muted small">Barème</div><div class="fw-bold">/ {{ evaluation.note_max }}</div></div>
+      <div class="col-md-2"><div class="text-muted small">Notes saisies</div><div class="fw-bold text-success">{{ nb_notes }} / {{ lignes|length }}</div></div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-users me-2 text-primary"></i>Saisie des notes</span>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="tousAbsents()">Tous absents</button>
+      <button form="form-notes" type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <form id="form-notes" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Élève</th>
+              <th style="width:130px">Note /{{ evaluation.note_max }}</th>
+              <th style="width:80px" class="text-center">Absent</th>
+              <th>Observation</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for l in lignes %}
+          <tr id="row-{{ l.eleve.pk }}" class="{% if l.absent %}table-warning{% endif %}">
+            <td class="text-muted">{{ forloop.counter }}</td>
+            <td><strong>{{ l.eleve.nom }} {{ l.eleve.prenom }}</strong></td>
+            <td>
+              <input type="number" name="note_{{ l.eleve.pk }}"
+                     class="form-control form-control-sm note-input"
+                     value="{{ l.valeur }}"
+                     min="0" max="{{ evaluation.note_max }}" step="0.25"
+                     {% if l.absent %}disabled{% endif %}>
+            </td>
+            <td class="text-center">
+              <input type="checkbox" name="absent_{{ l.eleve.pk }}"
+                     class="form-check-input absent-cb"
+                     data-id="{{ l.eleve.pk }}"
+                     {% if l.absent %}checked{% endif %}>
+            </td>
+            <td>
+              <input type="text" name="obs_{{ l.eleve.pk }}"
+                     class="form-control form-control-sm"
+                     value="{{ l.observation }}" placeholder="Remarque...">
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="p-3 d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer toutes les notes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.absent-cb').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const id = this.dataset.id;
+    const input = document.querySelector(`input[name="note_${id}"]`);
+    const row = document.getElementById(`row-${id}`);
+    input.disabled = this.checked;
+    row.classList.toggle('table-warning', this.checked);
+    if (this.checked) input.value = '';
+  });
+});
+function tousAbsents() {
+  document.querySelectorAll('.absent-cb').forEach(cb => {
+    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+  });
+}
+</script>
+{% endblock %}

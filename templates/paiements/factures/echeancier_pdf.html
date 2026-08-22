@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Échéancier {{ facture.numero }}</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    color: #1a1a2e;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ── En-tête ── */
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1a3c6e;
+    color: #ffffff;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  .header-table td {
+    padding: 10px 14px;
+    vertical-align: middle;
+  }
+  .ets-nom   { font-size: 14pt; font-weight: bold; color: #e8a020; }
+  .ets-sous  { font-size: 9pt; color: #ccddee; }
+  .titre-doc { font-size: 16pt; font-weight: bold; text-align: right; }
+  .sous-titre { font-size: 9pt; color: #ccddee; text-align: right; }
+
+  /* ── Fiche élève ── */
+  .eleve-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #c8d9f0;
+    border-top: none;
+    margin-bottom: 0;
+  }
+  .eleve-table td {
+    padding: 6px 12px;
+    border-right: 1px solid #e0e7f0;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+  .field-label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    color: #888888;
+    font-weight: bold;
+    letter-spacing: 0.5pt;
+  }
+  .field-val {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #1a2b4a;
+    margin-top: 2px;
+  }
+
+  .sep { height: 10px; }
+
+  /* ── Tableau échéancier ── */
+  .doc-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 10pt;
+    border: 1px solid #c8d9f0;
+  }
+  .doc-table thead td {
+    background-color: #e8f0fb;
+    color: #1a3c6e;
+    font-weight: bold;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.4pt;
+    padding: 7px 8px;
+    border: 1px solid #c8d9f0;
+  }
+  .doc-table tbody td {
+    padding: 8px 8px;
+    border: 1px solid #e0e7f0;
+    vertical-align: middle;
+  }
+  .doc-table tfoot td {
+    padding: 8px 8px;
+    border: 1px solid #e0e7f0;
+    font-weight: bold;
+  }
+  .txt-end { text-align: right; }
+  .txt-center { text-align: center; }
+  .row-total { background-color: #1a3c6e; color: #ffffff; font-size: 11pt; }
+
+  .badge-mini { border-radius: 10px; padding: 2px 8px; font-size: 8.5pt; font-weight: bold; white-space: nowrap; }
+  .bd-paye { background-color: #d1fae5; color: #065f46; }
+  .bd-attente { background-color: #e5e7eb; color: #374151; }
+
+  /* ── Bas de page ── */
+  .bas-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .bas-table td { vertical-align: top; width: 50%; padding: 4px; }
+  .bloc {
+    border: 1px solid #c8d9f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-height: 60px;
+  }
+  .sig-ligne { border-bottom: 1px solid #ccc; height: 36px; margin-top: 6px; }
+
+  .footer {
+    text-align: center;
+    font-size: 8pt;
+    color: #aaa;
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid #e0e7f0;
+  }
+</style>
+</head>
+<body>
+
+<!-- EN-TÊTE -->
+<table class="header-table">
+  <tr>
+    <td style="width:55%;">
+      <div class="ets-nom">{{ groupe.nom|default:"Groupe Scolaire" }}</div>
+      <div class="ets-sous">{% if facture.eleve.classe.ecole %}{{ facture.eleve.classe.ecole.nom }}{% endif %}{% if facture.eleve.classe.ecole and groupe.ville %}, {% endif %}{% if groupe.ville %}{{ groupe.ville }}{% endif %}</div>
+    </td>
+    <td style="width:45%;">
+      <div class="titre-doc">ÉCHÉANCIER DE PAIEMENT</div>
+      <div class="sous-titre">Facture N° {{ facture.numero }}</div>
+    </td>
+  </tr>
+</table>
+
+<!-- FICHE ÉLÈVE -->
+<table class="eleve-table">
+  <tr>
+    <td style="width:34%;">
+      <div class="field-label">Élève</div>
+      <div class="field-val">{{ facture.eleve.nom }} {{ facture.eleve.prenom }}</div>
+    </td>
+    <td style="width:18%;">
+      <div class="field-label">Matricule</div>
+      <div class="field-val">{{ facture.eleve.matricule }}</div>
+    </td>
+    <td style="width:18%;">
+      <div class="field-label">Classe</div>
+      <div class="field-val">{{ facture.eleve.classe.nom|default:"—" }}</div>
+    </td>
+    <td style="width:20%; border-right:none;">
+      <div class="field-label">Année scolaire</div>
+      <div class="field-val">{{ facture.annee_scolaire }}</div>
+    </td>
+  </tr>
+</table>
+
+<div class="sep"></div>
+
+<!-- ÉCHÉANCIER -->
+<table class="doc-table">
+  <thead>
+    <tr>
+      <td style="width:110px;">Tranche</td>
+      <td style="width:130px;">Date d'échéance</td>
+      <td class="txt-center" style="width:120px; white-space:nowrap;">Statut</td>
+      <td class="txt-end" style="white-space:nowrap;">Montant (FCFA)</td>
+    </tr>
+  </thead>
+  <tbody>
+  {% for e in facture.echeances.all %}
+    <tr>
+      <td>Tranche {{ e.numero }}</td>
+      <td>{{ e.date_echeance|date:"d/m/Y" }}</td>
+      <td class="txt-center" style="white-space:nowrap; font-weight:bold; color:{% if e.est_paye %}#065f46{% else %}#374151{% endif %};">
+        {% if e.est_paye %}Payée{% else %}En attente{% endif %}
+      </td>
+      <td class="txt-end">{{ e.montant|floatformat:0 }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="txt-center" style="color:#999;">Aucun échéancier défini</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="row-total"><td colspan="3">Total facture</td><td class="txt-end">{{ facture.montant_total|floatformat:0 }}</td></tr>
+  </tfoot>
+</table>
+
+<!-- SIGNATURES -->
+<table class="bas-table">
+  <tr>
+    <td>
+      <div class="bloc">
+        <div style="font-weight:bold; color:#1a3c6e; text-transform:uppercase; font-size:9pt;">Le Directeur</div>
+        <div class="sig-ligne"></div>
+      </div>
+    </td>
+    <td>
+      <div class="bloc">
+        <div style="font-weight:bold; color:#1a3c6e; text-transform:uppercase; font-size:9pt;">Parent / Tuteur</div>
+        <div class="sig-ligne"></div>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<div class="footer">
+  {{ groupe.nom }} — Document généré automatiquement — {{ facture.annee_scolaire }}
+</div>
+
+</body>
+</html>

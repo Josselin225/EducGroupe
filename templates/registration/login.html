@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — {{ groupe.nom|default:"EduGroupe" }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(circle at 15% 20%, #234a85 0%, #0d2340 45%, #081627 100%);
+        }
+
+        /* Formes décoratives */
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: .35;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .blob-1 { width: 420px; height: 420px; background: #e8a020; top: -140px; right: -120px; }
+        .blob-2 { width: 320px; height: 320px; background: #1a3c6e; bottom: -100px; left: -80px; opacity: .5; }
+        .blob-3 { width: 220px; height: 220px; background: #4f8ff0; top: 40%; right: 8%; opacity: .18; }
+
+        /* Carte de connexion */
+        .login-card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255,255,255,.97);
+            backdrop-filter: blur(6px);
+            border-radius: 22px;
+            box-shadow: 0 24px 60px rgba(0,0,0,.35);
+            padding: 40px 36px;
+        }
+
+        .brand-badge {
+            width: 74px; height: 74px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #1a3c6e, #0d2340);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 18px;
+            box-shadow: 0 10px 24px rgba(26,60,110,.35);
+        }
+        .brand-badge img { width: 46px; height: 46px; object-fit: contain; border-radius: 8px; }
+
+        .login-card h1 {
+            font-size: 1.35rem; font-weight: 800; color: #0d2340;
+            text-align: center; margin-bottom: 2px;
+        }
+        .login-card .devise {
+            text-align: center; color: #8a94a3; font-size: .82rem;
+            margin-bottom: 28px; font-style: italic;
+        }
+
+        .form-label { font-weight: 600; font-size: .82rem; color: #33415c; margin-bottom: 6px; }
+        .input-pill {
+            display: flex; align-items: center;
+            border: 1.5px solid #e5e9f0; border-radius: 12px;
+            padding: 0 14px; transition: border-color .15s, box-shadow .15s;
+            background: #f8fafc;
+        }
+        .input-pill:focus-within {
+            border-color: #1a3c6e;
+            box-shadow: 0 0 0 4px rgba(26,60,110,.1);
+            background: white;
+        }
+        .input-pill i { color: #9aa5b5; font-size: .9rem; width: 20px; text-align: center; }
+        .input-pill input {
+            border: none; background: transparent; outline: none;
+            padding: 12px 10px; width: 100%; font-size: .92rem; color: #1a1a2e;
+        }
+        .input-pill button {
+            border: none; background: transparent; color: #9aa5b5; cursor: pointer;
+            padding: 6px;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #1a3c6e, #0d2340);
+            color: white; width: 100%;
+            padding: 13px; font-weight: 700; font-size: .95rem;
+            border: none; border-radius: 12px;
+            box-shadow: 0 10px 22px rgba(26,60,110,.3);
+            transition: transform .15s, box-shadow .15s;
+            margin-top: 6px;
+        }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(26,60,110,.4); color: white; }
+        .btn-login:active { transform: translateY(0); }
+
+        .footer-note {
+            color: #a8b0bd; font-size: .74rem; text-align: center; margin-top: 22px;
+        }
+
+        .alert-modern {
+            border-radius: 12px; border: none; font-size: .86rem;
+        }
+
+        @media (max-width: 420px) {
+            .login-card { padding: 32px 22px; border-radius: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="login-card">
+    <div class="brand-badge">
+        {% if groupe.logo %}
+        <img src="{{ groupe.logo.url }}" alt="Logo">
+        {% else %}
+        <i class="fas fa-graduation-cap fa-lg" style="color:#e8a020"></i>
+        {% endif %}
+    </div>
+    <h1>{{ groupe.nom|default:"EduGroupe" }}</h1>
+    <p class="devise">« {{ groupe.devise|default:"Système de Gestion Scolaire" }} »</p>
+
+    {% if request.GET.bloque %}
+    <div class="alert alert-danger alert-modern py-3 mb-3" id="bloc-alerte">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="fas fa-lock fa-lg"></i>
+            <strong>Accès temporairement bloqué</strong>
+        </div>
+        <div class="mb-2" style="font-size:.85rem">Trop de tentatives échouées. Veuillez patienter.</div>
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-clock"></i>
+            <span>Déblocage dans : <strong id="countdown">{{ request.GET.attente }}s</strong></span>
+        </div>
+        <div class="mt-2" style="background:rgba(0,0,0,.1);border-radius:4px;height:6px;overflow:hidden">
+            <div id="progress-bar" style="height:100%;background:#dc3545;width:100%;transition:width 1s linear"></div>
+        </div>
+    </div>
+    {% elif form.errors %}
+    <div class="alert alert-danger alert-modern d-flex align-items-center gap-2 py-2 mb-3">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Identifiant ou mot de passe incorrect.</span>
+    </div>
+    {% endif %}
+
+    <form method="post" id="login-form">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Nom d'utilisateur</label>
+            <div class="input-pill">
+                <i class="fas fa-user"></i>
+                <input type="text" name="username" placeholder="Votre identifiant"
+                       required autofocus autocomplete="username">
+            </div>
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Mot de passe</label>
+            <div class="input-pill">
+                <i class="fas fa-lock"></i>
+                <input type="password" name="password" id="pwd" placeholder="Votre mot de passe"
+                       required autocomplete="current-password">
+                <button type="button" onclick="togglePwd()" tabindex="-1">
+                    <i class="fas fa-eye" id="eye-icon"></i>
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn-login">
+            <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+        </button>
+    </form>
+
+    <p class="footer-note">
+        <i class="fas fa-shield-alt me-1"></i>Accès réservé au personnel autorisé
+    </p>
+</div>
+
+<script>
+function togglePwd() {
+    const pwd = document.getElementById('pwd');
+    const icon = document.getElementById('eye-icon');
+    if (pwd.type === 'password') {
+        pwd.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        pwd.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+// Compte à rebours de déblocage
+(function () {
+    const el = document.getElementById('countdown');
+    const bar = document.getElementById('progress-bar');
+    const form = document.getElementById('login-form');
+    if (!el) return;
+
+    let seconds = parseInt(el.textContent) || 0;
+    const total = seconds;
+
+    if (form) {
+        form.querySelectorAll('input, button').forEach(e => e.disabled = true);
+    }
+
+    function tick() {
+        if (seconds <= 0) {
+            el.textContent = '0s';
+            if (bar) bar.style.width = '0%';
+            if (form) {
+                form.querySelectorAll('input, button').forEach(e => e.disabled = false);
+            }
+            const alerte = document.getElementById('bloc-alerte');
+            if (alerte) alerte.style.display = 'none';
+            window.location.href = '/accounts/login/';
+            return;
+        }
+        el.textContent = seconds + 's';
+        if (bar) bar.style.width = (seconds / total * 100) + '%';
+        seconds--;
+        setTimeout(tick, 1000);
+    }
+    tick();
+})();
+</script>
+</body>
+</html>

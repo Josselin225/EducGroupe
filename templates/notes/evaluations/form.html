@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-clipboard-list{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-clipboard-list me-2 text-primary"></i>{{ page_title }}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Intitulé <span class="text-danger">*</span></label>
+              {{ form.intitule }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Type d'évaluation</label>
+              {{ form.type_evaluation }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Période</label>
+              {{ form.periode }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Matière</label>
+              {{ form.matiere }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Enseignant</label>
+              {{ form.enseignant }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Classe</label>
+              {{ form.classe }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Année scolaire</label>
+              {{ form.annee_scolaire }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Date</label>
+              {{ form.date }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Barème (sur)</label>
+              {{ form.note_max }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Coefficient</label>
+              {{ form.coefficient }}
+            </div>
+          </div>
+          <div class="d-flex gap-2 justify-content-end mt-4">
+            <a href="{% url 'notes:evaluations_liste' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

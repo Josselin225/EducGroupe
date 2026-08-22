@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title }} — {{ groupe.nom|default:"EduGroupe" }}{% endblock %}</title>
+    <script>
+    (function() {
+        var t = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', t);
+    })();
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a3c6e;
+            --secondary: #e8a020;
+            --sidebar-width: 260px;
+            --sidebar-mini: 64px;
+            --topbar-height: 60px;
+            --body-bg: #f0f4f8;
+            --surface-bg: #ffffff;
+            --border-soft: #e9ecef;
+            --hover-bg: #e9ecef;
+            --notif-hover-bg: #f8f9fa;
+            --table-head-bg: #f8f9fa;
+            --text-soft: #2c3e50;
+            --muted-icon: #8a94a3;
+        }
+        [data-bs-theme="dark"] {
+            --body-bg: #0f1620;
+            --surface-bg: #1a2332;
+            --border-soft: #2a3547;
+            --hover-bg: #2a3547;
+            --notif-hover-bg: #23303f;
+            --table-head-bg: #1f2937;
+            --text-soft: #e2e8f0;
+            --muted-icon: #94a3b8;
+        }
+        body { background: var(--body-bg); font-family: 'Segoe UI', sans-serif; }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            background: var(--primary);
+            color: white;
+            z-index: 100;
+            box-shadow: 3px 0 10px rgba(0,0,0,.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width .25s ease;
+        }
+        .sidebar.collapsed { width: var(--sidebar-mini); }
+
+        /* Brand */
+        .sidebar-brand {
+            flex-shrink: 0;
+            padding: 16px;
+            background: rgba(0,0,0,.25);
+            border-bottom: 2px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .sidebar-brand .brand-icon { flex-shrink: 0; }
+        .sidebar-brand h5 { color: var(--secondary); margin: 0; font-weight: 700; font-size: 1rem; transition: opacity .2s; }
+        .sidebar-brand small { color: rgba(255,255,255,.55); font-size: .72rem; }
+
+        /* Nav */
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 8px 0 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 2px; }
+
+        .sidebar-nav .nav-link {
+            color: rgba(255,255,255,.78);
+            padding: 9px 20px;
+            display: flex; align-items: center; gap: 10px;
+            transition: all .15s;
+            border-left: 3px solid transparent;
+            font-size: .9rem;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .sidebar-nav .nav-link .nav-icon { width: 18px; text-align: center; font-size: .9rem; flex-shrink: 0; }
+        .sidebar-nav .nav-link:hover,
+        .sidebar-nav .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,.1);
+            border-left-color: var(--secondary);
+        }
+
+        /* Groupe tiroir */
+        .sidebar-group-btn {
+            width: 100%;
+            background: none;
+            border: none;
+            border-left: 3px solid transparent;
+            color: rgba(255,255,255,.5);
+            padding: 8px 20px;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: .68rem;
+            letter-spacing: 1px;
+            margin-top: 6px;
+            transition: all .15s;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .sidebar-group-btn .grp-icon { flex-shrink: 0; font-size: .75rem; }
+        .sidebar-group-btn:hover { color: rgba(255,255,255,.8); }
+        .sidebar-group-btn .chevron { margin-left: auto; font-size: .65rem; transition: transform .2s; flex-shrink: 0; }
+        .sidebar-group-btn[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+        .sidebar-group-btn[aria-expanded="true"] { color: var(--secondary); }
+
+        .sidebar-group-items .nav-link { padding-left: 36px; }
+
+        /* ── ÉTAT RÉTRACTÉ ── */
+        .sidebar.collapsed .sidebar-brand h5,
+        .sidebar.collapsed .sidebar-brand small,
+        .sidebar.collapsed .nav-link-text,
+        .sidebar.collapsed .grp-label,
+        .sidebar.collapsed .chevron { opacity: 0; width: 0; overflow: hidden; }
+
+        #toggle-btn-sidebar { display: flex; }
+        .sidebar.collapsed #toggle-btn-sidebar { display: none; }
+
+        .sidebar.collapsed .sidebar-nav .nav-link { padding: 10px 0; justify-content: center; border-left-color: transparent; }
+        .sidebar.collapsed .sidebar-nav .nav-link.active { border-left-color: var(--secondary); }
+        .sidebar.collapsed .sidebar-group-btn { padding: 8px 0; justify-content: center; }
+        .sidebar.collapsed .sidebar-group-items { display: none !important; }
+
+        /* ── CONTENU ── */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left .25s ease;
+        }
+        .main-content.expanded { margin-left: var(--sidebar-mini); }
+
+        .topbar {
+            background: var(--surface-bg); padding: 10px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            position: fixed; top: 0;
+            left: var(--sidebar-width); right: 0;
+            height: var(--topbar-height);
+            z-index: 1030;
+            transition: left .25s ease;
+        }
+        .main-content.expanded .topbar { left: var(--sidebar-mini); }
+        .topbar h4 { margin: 0; color: var(--primary); font-weight: 600; font-size: 1.05rem; }
+        .content-area { padding: 24px; padding-top: calc(var(--topbar-height) + 24px); }
+
+        /* Bouton toggle */
+        .btn-toggle-sidebar {
+            background: none; border: none;
+            color: var(--primary); font-size: 1.1rem;
+            padding: 4px 8px; border-radius: 6px;
+            cursor: pointer; transition: background .15s;
+            margin-right: 8px;
+        }
+        .btn-toggle-sidebar:hover { background: var(--hover-bg); }
+
+        /* ── ACTIONS TOPBAR (notifications / compte) ── */
+        .btn-topbar-icon {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: none; border: none; color: var(--primary);
+            font-size: 1.05rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background .15s;
+        }
+        [data-bs-theme="dark"] .btn-topbar-icon,
+        [data-bs-theme="dark"] .btn-toggle-sidebar { color: #6fa8ff; }
+        .btn-topbar-icon:hover { background: var(--hover-bg); }
+        .notif-badge {
+            position: absolute; top: 2px; right: 2px;
+            background: #dc3545; color: white;
+            font-size: .62rem; font-weight: 700;
+            min-width: 16px; height: 16px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 3px; line-height: 1;
+        }
+        .notif-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px; text-decoration: none; color: var(--text-soft);
+            border-bottom: 1px solid var(--border-soft); font-size: .82rem;
+            transition: background .12s;
+        }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item:hover { background: var(--notif-hover-bg); color: var(--text-soft); }
+        .notif-item i { flex-shrink: 0; margin-top: 2px; width: 16px; text-align: center; }
+        .notif-item.notif-danger i { color: #dc3545; }
+        .notif-item.notif-warning i { color: #e8a020; }
+        .notif-item.notif-info i { color: #0d6efd; }
+        .topbar-user-btn {
+            background: none; border: none; display: flex; align-items: center; gap: 8px;
+            padding: 4px 8px 4px 4px; border-radius: 20px; cursor: pointer; transition: background .15s;
+        }
+        .topbar-user-btn:hover { background: var(--hover-bg); }
+        .topbar-user-btn .topbar-avatar {
+            width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+        }
+        .topbar-user-btn .topbar-avatar-placeholder {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            background: var(--primary); color: white;
+            display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 700;
+        }
+        .topbar-user-btn .topbar-user-name { font-size: .85rem; font-weight: 600; color: var(--text-soft); max-width: 130px; }
+        .topbar-user-btn::after { display: none; }
+        .topbar-user-btn .fa-chevron-down { font-size: .65rem; color: var(--muted-icon); }
+
+        /* ── FLYOUT (mode rétracté) ── */
+        .sidebar-group-wrap { position: relative; }
+        .sidebar-flyout {
+            display: none;
+            position: fixed;
+            left: var(--sidebar-mini);
+            background: #0d2340;
+            min-width: 210px;
+            border-radius: 0 10px 10px 0;
+            box-shadow: 4px 4px 16px rgba(0,0,0,.35);
+            z-index: 1040;
+            padding: 6px 0;
+            pointer-events: auto;
+        }
+        .sidebar-flyout .flyout-title {
+            padding: 8px 16px 6px;
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--secondary);
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            margin-bottom: 4px;
+        }
+        .sidebar-flyout a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 16px;
+            color: rgba(255,255,255,.8);
+            text-decoration: none;
+            font-size: .88rem;
+            transition: background .12s;
+        }
+        .sidebar-flyout a:hover { background: rgba(255,255,255,.1); color: white; }
+        .sidebar-flyout a.active { color: var(--secondary); }
+        .sidebar-flyout a i { width: 16px; text-align: center; }
+
+        /* Afficher flyout au survol en mode rétracté */
+        .sidebar.collapsed .sidebar-group-wrap:hover .sidebar-flyout { display: block; }
+        .sidebar.collapsed .sidebar-single-wrap:hover .sidebar-flyout { display: block; }
+
+        /* ── FOND SEMI-TRANSPARENT (tiroir mobile) ── */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.45);
+            z-index: 1040;
+        }
+        .sidebar-backdrop.show { display: block; }
+
+        /* ── RESPONSIVE (mobile / tablette) ── */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                width: var(--sidebar-width) !important;
+                transform: translateX(-100%);
+                transition: transform .25s ease;
+                z-index: 1045;
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar.collapsed .sidebar-brand h5,
+            .sidebar.collapsed .sidebar-brand small,
+            .sidebar.collapsed .nav-link-text,
+            .sidebar.collapsed .grp-label,
+            .sidebar.collapsed .chevron { opacity: 1; width: auto; overflow: visible; }
+            .sidebar.collapsed .sidebar-nav .nav-link,
+            .sidebar.collapsed .sidebar-group-btn { padding-left: 20px; justify-content: flex-start; }
+            .main-content, .main-content.expanded { margin-left: 0; }
+            .topbar, .main-content.expanded .topbar { left: 0; }
+            .topbar {
+                flex-wrap: wrap;
+                height: auto;
+                min-height: var(--topbar-height);
+                padding: 10px 14px;
+                row-gap: 8px;
+            }
+            .topbar > div:first-child { min-width: 0; flex: 1 1 auto; }
+            .topbar h4 { font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            #topbar-actions-wrap { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-end; }
+            #topbar-actions-wrap .btn { padding: .3rem .55rem; font-size: .78rem; }
+            .content-area { padding: 16px; padding-top: calc(var(--topbar-height) + 16px); }
+            .topbar-user-btn .topbar-user-name { display: none; }
+
+            /* ── TABLEAUX ── */
+            .table-responsive { -webkit-overflow-scrolling: touch; }
+            .table { font-size: .8rem; }
+            .table td, .table th { padding: .5rem .6rem; white-space: nowrap; }
+            .table td .btn, .table th .btn { padding: .25rem .5rem; font-size: .75rem; }
+        }
+
+        /* ── COMPOSANTS ── */
+        .stat-card {
+            background: var(--surface-bg); border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.06); border-left: 4px solid;
+            transition: transform .2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card .number { font-size: 2rem; font-weight: 700; }
+        .stat-card .label { color: #6c757d; font-size: .85rem; }
+        .stat-trend {
+            font-size: .7rem; font-weight: 600; padding: 2px 7px;
+            border-radius: 20px; display: inline-flex; align-items: center; gap: 3px;
+        }
+        .card { background: var(--surface-bg); border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+        .card-header { background: var(--surface-bg); border-bottom: 1px solid var(--border-soft); font-weight: 600; padding: 16px 20px; }
+        .card-footer { background: var(--surface-bg); border-top: 1px solid var(--border-soft); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background: #0f2547; border-color: #0f2547; }
+        .table th { background: var(--table-head-bg); font-weight: 600; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
+        /* ── MODALE SUPPORT TECHNIQUE ── */
+        .support-modal-content { border: none; border-radius: 16px; overflow: hidden; }
+        .support-modal-banner {
+            background: linear-gradient(135deg, var(--primary), #0f2547);
+            color: white; text-align: center;
+            padding: 32px 24px 24px;
+            position: relative;
+        }
+        .support-modal-banner .btn-close { position: absolute; top: 14px; right: 14px; }
+        .support-modal-avatar {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; margin: 0 auto 12px;
+        }
+        .support-contact-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 14px; border-radius: 12px;
+            text-decoration: none; color: inherit;
+            transition: background .15s;
+        }
+        a.support-contact-link:hover { background: var(--table-head-bg); }
+        .support-contact-icon {
+            width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+        }
+        .support-contact-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; color: var(--muted-icon); font-weight: 700; }
+        .support-contact-value { font-weight: 600; color: var(--text-soft); }
+        [data-bs-theme="dark"] .topbar h4 { color: #6fa8ff; }
+        [data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select { background-color: var(--surface-bg); border-color: var(--border-soft); }
+        [data-bs-theme="dark"] .table-light, [data-bs-theme="dark"] thead.table-light { --bs-table-bg: var(--table-head-bg); --bs-table-color: var(--text-soft); }
+        {% block extra_css %}{% endblock %}
+
+        /* ── ÉCRAN DE CHARGEMENT ── */
+        #page-loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,.15);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            transition: opacity .4s ease, visibility .4s ease;
+        }
+        #page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loader-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.85);
+            border: 3px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: loader-pulse 1.5s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(26,60,110,.2);
+        }
+        .loader-logo img { width: 54px; height: 54px; object-fit: contain; border-radius: 50%; }
+        .loader-card {
+            background: rgba(255,255,255,.85);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 10px 24px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(26,60,110,.15);
+        }
+        .loader-name {
+            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+        .loader-sub {
+            color: #6c757d;
+            font-size: .78rem;
+        }
+        .loader-bar {
+            width: 160px;
+            height: 3px;
+            background: rgba(26,60,110,.15);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .loader-bar-fill {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 3px;
+            animation: loader-fill .5s ease forwards;
+        }
+        [data-bs-theme="dark"] #page-loader { background: rgba(0,0,0,.35); }
+        [data-bs-theme="dark"] .loader-logo,
+        [data-bs-theme="dark"] .loader-card { background: rgba(26,35,50,.9); }
+        [data-bs-theme="dark"] .loader-sub { color: var(--muted-icon); }
+
+        @keyframes loader-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(232,160,32,.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(232,160,32,0); }
+        }
+        @keyframes loader-fill {
+            from { width: 0%; }
+            to   { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ÉCRAN DE CHARGEMENT -->
+<div id="page-loader">
+    <div class="loader-logo">
+        {% if groupe.logo %}
+        <img src="{{ groupe.logo.url }}" alt="Logo">
+        {% else %}
+        <i class="fas fa-graduation-cap fa-2x" style="color:var(--secondary)"></i>
+        {% endif %}
+    </div>
+    <div class="loader-card">
+        <div class="loader-name">{{ groupe.sigle|default:groupe.nom|default:"EduGroupe" }}</div>
+        <div class="loader-sub">{{ groupe.devise|default:"Gestion Scolaire" }}</div>
+        <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+    </div>
+</div>
+
+<div class="sidebar" id="sidebar">
+    <!-- MARQUE -->
+    <div class="sidebar-brand">
+        <div class="brand-icon">
+            {% if groupe.logo %}
+            <img src="{{ groupe.logo.url }}" style="height:34px;width:34px;object-fit:contain;border-radius:4px">
+            {% else %}
+            <i class="fas fa-graduation-cap fa-lg" style="color:var(--secondary)"></i>
+            {% endif %}
+        </div>
+        <div style="overflow:hidden;flex:1">
+            <h5>{{ groupe.sigle|default:groupe.nom|truncatechars:16 }}</h5>
+            <small>{{ groupe.devise|default:"Gestion Scolaire"|truncatechars:26 }}</small>
+        </div>
+        <!-- Bouton rétractable sur le sidebar -->
+        <button id="toggle-btn-sidebar" title="Réduire le menu"
+                style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;padding:4px 6px;border-radius:6px;flex-shrink:0;transition:color .15s"
+                onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.5)'">
+            <i class="fas fa-chevron-left" id="toggle-icon"></i>
+        </button>
+    </div>
+
+    <!-- NAVIGATION -->
+    <div class="sidebar-nav" id="sidebar-nav">
+
+        <!-- Tableau de bord -->
+        <div class="sidebar-single-wrap sidebar-group-wrap">
+            <a href="/" class="nav-link {% if active == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt nav-icon"></i>
+                <span class="nav-link-text">Tableau de bord</span>
+            </a>
+            <div class="sidebar-flyout">
+                <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                </a>
+            </div>
+        </div>
+
+        <!-- GROUPE SCOLAIRE (masqué pour les enseignants) -->
+        {% if user_role != 'enseignant' %}
+        <div class="sidebar-group-wrap">
+            <button class="sidebar-group-btn" data-bs-toggle="collapse" data-bs-target="#grp-groupe"
+                    aria-expanded="{% if active == 'annees' or active == 'enseignants' or active == 'matieres' or active == 'paiements' or active == 'rapports' or active == 'connexions' or active == 'dashboard' %}true{% else %}false{% endif %}">
+                <i class="fas fa-sitemap grp-icon"></i>
+                <span class="grp-label">Groupe scolaire</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </button>
+            <div class="collapse {% if active == 'annees' or active == 'enseignants' or active == 'matieres' or active == 'paiements' or active == 'rapports' or active == 'connexions' or active == 'dashboard' %}show{% endif %} sidebar-group-items" id="grp-groupe">
+                <a href="/annees/" class="nav-link {% if active == 'annees' %}active{% endif %}"><i class="fas fa-calendar-check nav-icon"></i><span class="nav-link-text">Années scolaires</span></a>
+                <a href="/enseignants/" class="nav-link {% if active == 'enseignants' %}active{% endif %}"><i class="fas fa-chalkboard-teacher nav-icon"></i><span class="nav-link-text">Enseignants</span></a>
+                <a href="/enseignants/matieres/" class="nav-link {% if active == 'matieres' %}active{% endif %}"><i class="fas fa-book nav-icon"></i><span class="nav-link-text">Matières</span></a>
+                <a href="/paiements/" class="nav-link {% if active == 'paiements' %}active{% endif %}"><i class="fas fa-money-bill-wave nav-icon"></i><span class="nav-link-text">Paiements</span></a>
+                <a href="/rapports/" class="nav-link {% if active == 'rapports' %}active{% endif %}"><i class="fas fa-chart-bar nav-icon"></i><span class="nav-link-text">Rapports</span></a>
+                <a href="/rapports/connexions/" class="nav-link {% if active == 'connexions' %}active{% endif %}"><i class="fas fa-shield-alt nav-icon"></i><span class="nav-link-text">Journal d'activité</span></a>
+            </div>
+            <div class="sidebar-flyout">
+                <div class="flyout-title">Groupe scolaire</div>
+                <a href="/annees/" class="{% if active == 'annees' %}active{% endif %}"><i class="fas fa-calendar-check"></i> Années scolaires</a>
+                <a href="/enseignants/" class="{% if active == 'enseignants' %}active{% endif %}"><i class="fas fa-chalkboard-teacher"></i> Enseignants</a>
+                <a href="/enseignants/matieres/" class="{% if active == 'matieres' %}active{% endif %}"><i class="fas fa-book"></i> Matières</a>
+                <a href="/paiements/" class="{% if active == 'paiements' %}active{% endif %}"><i class="fas fa-money-bill-wave"></i> Paiements</a>
+                <a href="/rapports/" class="{% if active == 'rapports' %}active{% endif %}"><i class="fas fa-chart-bar"></i> Rapports</a>
+                <a href="/rapports/connexions/" class="{% if active == 'connexions' %}active{% endif %}"><i class="fas fa-shield-alt"></i> Journal d'activité</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ÉTABLISSEMENTS -->
+        <div class="sidebar-group-wrap">
+            <button class="sidebar-group-btn" data-bs-toggle="collapse" data-bs-target="#grp-etab"
+                    aria-expanded="{% if active == 'ecoles' or active == 'classes' or active == 'eleves' %}true{% else %}false{% endif %}">
+                <i class="fas fa-school grp-icon"></i>
+                <span class="grp-label">Établissements</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </button>
+            <div class="collapse {% if active == 'ecoles' or active == 'classes' or active == 'eleves' %}show{% endif %} sidebar-group-items" id="grp-etab">
+                {% if user_role != 'enseignant' %}
+                <a href="/ecoles/" class="nav-link {% if active == 'ecoles' %}active{% endif %}"><i class="fas fa-school nav-icon"></i><span class="nav-link-text">Écoles</span></a>
+                <a href="/classes/" class="nav-link {% if active == 'classes' %}active{% endif %}"><i class="fas fa-door-open nav-icon"></i><span class="nav-link-text">Classes</span></a>
+                {% endif %}
+                <a href="/eleves/" class="nav-link {% if active == 'eleves' %}active{% endif %}"><i class="fas fa-user-graduate nav-icon"></i><span class="nav-link-text">Élèves</span></a>
+            </div>
+            <div class="sidebar-flyout">
+                <div class="flyout-title">Établissements</div>
+                {% if user_role != 'enseignant' %}
+                <a href="/ecoles/" class="{% if active == 'ecoles' %}active{% endif %}"><i class="fas fa-school"></i> Écoles</a>
+                <a href="/classes/" class="{% if active == 'classes' %}active{% endif %}"><i class="fas fa-door-open"></i> Classes</a>
+                {% endif %}
+                <a href="/eleves/" class="{% if active == 'eleves' %}active{% endif %}"><i class="fas fa-user-graduate"></i> Élèves</a>
+            </div>
+        </div>
+
+        <!-- PÉDAGOGIE -->
+        <div class="sidebar-group-wrap">
+            <button class="sidebar-group-btn" data-bs-toggle="collapse" data-bs-target="#grp-peda"
+                    aria-expanded="{% if active == 'emploi_du_temps' or active == 'notes' or active == 'presences' %}true{% else %}false{% endif %}">
+                <i class="fas fa-book-open grp-icon"></i>
+                <span class="grp-label">Pédagogie</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </button>
+            <div class="collapse {% if active == 'emploi_du_temps' or active == 'notes' or active == 'presences' %}show{% endif %} sidebar-group-items" id="grp-peda">
+                <a href="/emploi-du-temps/" class="nav-link {% if active == 'emploi_du_temps' %}active{% endif %}"><i class="fas fa-calendar-alt nav-icon"></i><span class="nav-link-text">Emploi du temps</span></a>
+                <a href="/notes/" class="nav-link {% if active == 'notes' %}active{% endif %}"><i class="fas fa-star nav-icon"></i><span class="nav-link-text">Notes & Bulletins</span></a>
+                <a href="/presences/" class="nav-link {% if active == 'presences' %}active{% endif %}"><i class="fas fa-clipboard-check nav-icon"></i><span class="nav-link-text">Présences</span></a>
+            </div>
+            <div class="sidebar-flyout">
+                <div class="flyout-title">Pédagogie</div>
+                <a href="/emploi-du-temps/" class="{% if active == 'emploi_du_temps' %}active{% endif %}"><i class="fas fa-calendar-alt"></i> Emploi du temps</a>
+                <a href="/notes/" class="{% if active == 'notes' %}active{% endif %}"><i class="fas fa-star"></i> Notes & Bulletins</a>
+                <a href="/presences/" class="{% if active == 'presences' %}active{% endif %}"><i class="fas fa-clipboard-check"></i> Présences</a>
+            </div>
+        </div>
+
+        <!-- SYSTÈME (masqué pour les enseignants) -->
+        {% if user_role != 'enseignant' %}
+        <div class="sidebar-group-wrap">
+            <button class="sidebar-group-btn" data-bs-toggle="collapse" data-bs-target="#grp-sys"
+                    aria-expanded="{% if active == 'parametres' %}true{% else %}false{% endif %}">
+                <i class="fas fa-cog grp-icon"></i>
+                <span class="grp-label">Système</span>
+                <i class="fas fa-chevron-right chevron"></i>
+            </button>
+            <div class="collapse {% if active == 'parametres' or active == 'sauvegardes' %}show{% endif %} sidebar-group-items" id="grp-sys">
+                <a href="/parametres/" class="nav-link {% if active == 'parametres' %}active{% endif %}"><i class="fas fa-sliders-h nav-icon"></i><span class="nav-link-text">Paramètres</span></a>
+                <a href="/rapports/sauvegardes/" class="nav-link {% if active == 'sauvegardes' %}active{% endif %}"><i class="fas fa-database nav-icon"></i><span class="nav-link-text">Sauvegardes</span></a>
+                <a href="/admin/" class="nav-link"><i class="fas fa-cog nav-icon"></i><span class="nav-link-text">Administration</span></a>
+            </div>
+            <div class="sidebar-flyout">
+                <div class="flyout-title">Système</div>
+                <a href="/parametres/" class="{% if active == 'parametres' %}active{% endif %}"><i class="fas fa-sliders-h"></i> Paramètres</a>
+                <a href="/rapports/sauvegardes/" class="{% if active == 'sauvegardes' %}active{% endif %}"><i class="fas fa-database"></i> Sauvegardes</a>
+                <a href="/admin/"><i class="fas fa-cog"></i> Administration</a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- FOND SEMI-TRANSPARENT (tiroir mobile) -->
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+<!-- CONTENU PRINCIPAL -->
+<div class="main-content" id="main-content">
+    <div class="topbar">
+        <div class="d-flex align-items-center">
+            <button class="btn-toggle-sidebar" id="toggle-btn" title="Réduire / Agrandir le menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4><i class="{% block icon %}fas fa-home{% endblock %} me-2"></i>{% block heading %}{{ page_title }}{% endblock %}</h4>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end" id="topbar-actions-wrap">
+            <span class="badge bg-success d-none d-md-inline-block">● En ligne</span>
+            {% block topbar_actions %}{% endblock %}
+
+            <!-- Mode sombre -->
+            <button class="btn-topbar-icon" id="theme-toggle" title="Basculer le thème clair/sombre">
+                <i class="fas fa-moon" id="theme-toggle-icon"></i>
+            </button>
+
+            <!-- Notifications -->
+            <div class="dropdown">
+                <button class="btn-topbar-icon position-relative" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    {% if notifications %}
+                    <span class="notif-badge">{{ notifications|length }}</span>
+                    {% endif %}
+                </button>
+                <div class="dropdown-menu dropdown-menu-end shadow-sm p-0" style="min-width:320px; max-width:360px;">
+                    <div class="px-3 py-2 border-bottom fw-semibold small">Notifications</div>
+                    {% if notifications %}
+                    <div style="max-height:340px; overflow-y:auto;">
+                        {% for n in notifications %}
+                        <a href="{{ n.url }}" class="notif-item notif-{{ n.type }}">
+                            <i class="fas {{ n.icon }}"></i>
+                            <span>{{ n.msg }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4 small">
+                        <i class="fas fa-bell-slash fa-lg d-block mb-2 opacity-50"></i>
+                        Aucune notification pour le moment
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Compte utilisateur -->
+            <div class="dropdown">
+                <button class="topbar-user-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% if request.user.profile.photo %}
+                    <img src="{{ request.user.profile.photo.url }}" class="topbar-avatar" alt="">
+                    {% else %}
+                    <div class="topbar-avatar-placeholder">{{ request.user.get_full_name|default:request.user.username|first|upper }}</div>
+                    {% endif %}
+                    <span class="topbar-user-name text-truncate d-none d-sm-inline">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li class="px-3 py-1">
+                        <div class="fw-semibold small text-truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        {% if user_role_label %}<div class="text-muted" style="font-size:.72rem">{{ user_role_label }}</div>{% endif %}
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/profil/"><i class="fas fa-user-cog me-2 text-muted"></i>Profil</a></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalSupportTech"><i class="fas fa-headset me-2 text-muted"></i>Support technique</a></li>
+                    <li>
+                        <form method="post" action="/accounts/logout/" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>Quitter</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="content-area">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<!-- MODALE SUPPORT TECHNIQUE -->
+<div class="modal fade" id="modalSupportTech" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content support-modal-content">
+      <div class="support-modal-banner">
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="support-modal-avatar"><i class="fas fa-headset"></i></div>
+        <h5 class="mb-0 fw-bold">Support technique</h5>
+        <div class="small opacity-75">Besoin d'aide ? Contactez-nous</div>
+      </div>
+      <div class="modal-body p-4">
+        {% if groupe.support_nom or groupe.support_telephone or groupe.support_whatsapp or groupe.support_email %}
+        <div class="d-flex flex-column gap-2">
+          {% if groupe.support_nom %}
+          <div class="support-contact-row">
+            <div class="support-contact-icon" style="background:#e8f0fe;color:#1a3c6e"><i class="fas fa-user"></i></div>
+            <div>
+              <div class="support-contact-label">Contact</div>
+              <div class="support-contact-value">{{ groupe.support_nom }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% for tel in groupe.support_telephones %}
+          <a href="tel:{{ tel|cut:' ' }}" class="support-contact-row support-contact-link">
+            <div class="support-contact-icon" style="background:#e8f5e9;color:#2e7d32"><i class="fas fa-phone"></i></div>
+            <div>
+              <div class="support-contact-label">Téléphone</div>
+              <div class="support-contact-value">{{ tel }}</div>
+            </div>
+          </a>
+          {% endfor %}
+          {% if groupe.support_whatsapp %}
+          <a href="https://wa.me/{{ groupe.support_whatsapp_lien }}" target="_blank" rel="noopener" class="support-contact-row support-contact-link">
+            <div class="support-contact-icon" style="background:#e7f9f0;color:#25d366"><i class="fab fa-whatsapp"></i></div>
+            <div>
+              <div class="support-contact-label">WhatsApp</div>
+              <div class="support-contact-value">+225 {{ groupe.support_whatsapp }}</div>
+            </div>
+          </a>
+          {% endif %}
+          {% if groupe.support_email %}
+          <a href="mailto:{{ groupe.support_email }}" class="support-contact-row support-contact-link">
+            <div class="support-contact-icon" style="background:#fff3cd;color:#92400e"><i class="fas fa-envelope"></i></div>
+            <div>
+              <div class="support-contact-label">Email</div>
+              <div class="support-contact-value">{{ groupe.support_email }}</div>
+            </div>
+          </a>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-muted text-center py-3">
+          <i class="fas fa-info-circle fa-lg d-block mb-2"></i>
+          Aucun contact de support technique configuré.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENEUR DES TOASTS -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"
+     style="position:fixed;top:calc(var(--topbar-height) + 16px);right:24px;z-index:9000;display:flex;flex-direction:column;gap:10px;min-width:300px;max-width:400px">
+
+  {% for message in messages %}
+  <div class="toast align-items-center text-white border-0 shadow"
+       role="alert" data-bs-autohide="true" data-bs-delay="4000"
+       data-tags="{{ message.tags }}">
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2 toast-body-colored"
+           style="flex:1;border-radius:10px 0 0 10px;padding:14px 16px">
+        <i class="toast-icon fa-lg flex-shrink-0"></i>
+        <span>{{ message }}</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white m-auto toast-close-btn"
+              data-bs-dismiss="toast"
+              style="padding:14px 12px;border-left:1px solid rgba(255,255,255,.2)"></button>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+// Configuration des toasts selon le type de message
+const TOAST_CONFIG = {
+    success: { bg: '#28a745', icon: 'fas fa-check-circle' },
+    error:   { bg: '#dc3545', icon: 'fas fa-times-circle' },
+    warning: { bg: '#e8a020', icon: 'fas fa-exclamation-triangle' },
+    info:    { bg: '#0d6efd', icon: 'fas fa-info-circle' },
+    debug:   { bg: '#6c757d', icon: 'fas fa-bug' },
+};
+document.querySelectorAll('.toast').forEach(el => {
+    const tags = el.dataset.tags || 'info';
+    const cfg = TOAST_CONFIG[tags] || TOAST_CONFIG.info;
+    // Appliquer couleur et icône
+    el.querySelector('.toast-body-colored').style.background = cfg.bg;
+    el.querySelector('.toast-icon').className = cfg.icon + ' toast-icon fa-lg flex-shrink-0';
+    el.querySelector('.toast-close-btn').style.background = cfg.bg;
+    el.style.borderRadius = '10px';
+    el.style.overflow = 'hidden';
+    // Lancer le toast
+    const toast = new bootstrap.Toast(el, { delay: 4000 });
+    toast.show();
+    el.addEventListener('hidden.bs.toast', () => {
+        el.style.transition = 'opacity .3s, transform .3s';
+        el.remove();
+    });
+});
+
+// Masquer le loader quand la page est complètement chargée
+window.addEventListener('load', function() {
+    const loader = document.getElementById('page-loader');
+    // Attendre que la barre de progression soit complète (1s) avant de masquer
+    setTimeout(() => {
+        loader.classList.add('hidden');
+        setTimeout(() => loader.remove(), 200);
+    }, 300);
+});
+
+// Bascule du mode sombre / clair
+(function() {
+    const btn = document.getElementById('theme-toggle');
+    const icon = document.getElementById('theme-toggle-icon');
+    function applyIcon(theme) {
+        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    applyIcon(document.documentElement.getAttribute('data-bs-theme') || 'light');
+    btn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-bs-theme', next);
+        localStorage.setItem('theme', next);
+        applyIcon(next);
+    });
+})();
+</script>
+<script>
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('main-content');
+const backdrop = document.getElementById('sidebar-backdrop');
+const toggleBtnTop = document.getElementById('toggle-btn');
+const toggleBtnSide = document.getElementById('toggle-btn-sidebar');
+const toggleIcon = document.getElementById('toggle-icon');
+const STORAGE_KEY = 'sidebar_collapsed';
+const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
+
+function setMobileOpen(open) {
+    sidebar.classList.toggle('mobile-open', open);
+    backdrop.classList.toggle('show', open);
+}
+
+function setCollapsed(collapsed) {
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        mainContent.classList.add('expanded');
+        toggleIcon.className = 'fas fa-chevron-right';
+        // Fermer tous les groupes
+        document.querySelectorAll('.sidebar-group-items.show').forEach(el => el.classList.remove('show'));
+        document.querySelectorAll('.sidebar-group-btn').forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+        // Activer tooltips
+        document.querySelectorAll('#sidebar-nav [data-bs-toggle="tooltip"]').forEach(el => {
+            bootstrap.Tooltip.getOrCreateInstance(el, {trigger: 'hover'});
+        });
+    } else {
+        sidebar.classList.remove('collapsed');
+        mainContent.classList.remove('expanded');
+        toggleIcon.className = 'fas fa-chevron-left';
+        // Désactiver tooltips
+        document.querySelectorAll('#sidebar-nav [data-bs-toggle="tooltip"]').forEach(el => {
+            const tip = bootstrap.Tooltip.getInstance(el);
+            if (tip) tip.dispose();
+        });
+        // Réouvrir le groupe actif
+        const activeLink = sidebar.querySelector('.nav-link.active');
+        if (activeLink) {
+            const group = activeLink.closest('.sidebar-group-items');
+            if (group) {
+                group.classList.add('show');
+                const btn = sidebar.querySelector(`[data-bs-target="#${group.id}"]`);
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+            }
+        }
+    }
+    localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+}
+
+function toggle() {
+    if (isMobile()) {
+        setMobileOpen(!sidebar.classList.contains('mobile-open'));
+    } else {
+        setCollapsed(!sidebar.classList.contains('collapsed'));
+    }
+}
+
+// Initialiser depuis localStorage (uniquement pertinent en mode bureau)
+if (!isMobile() && localStorage.getItem(STORAGE_KEY) === '1') setCollapsed(true);
+
+// Les deux boutons font la même chose
+toggleBtnTop.addEventListener('click', toggle);
+toggleBtnSide.addEventListener('click', toggle);
+
+// Fermer le tiroir mobile au clic sur le fond ou sur un lien de navigation
+backdrop.addEventListener('click', () => setMobileOpen(false));
+sidebar.querySelectorAll('a.nav-link, .sidebar-flyout a').forEach(link => {
+    link.addEventListener('click', () => { if (isMobile()) setMobileOpen(false); });
+});
+
+// Empêcher l'ouverture des groupes en mode rétracté (bureau uniquement)
+document.querySelectorAll('.sidebar-group-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        if (!isMobile() && sidebar.classList.contains('collapsed')) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+});
+
+// Positionner les flyouts dynamiquement (alignés avec l'élément survolé)
+document.querySelectorAll('.sidebar-group-wrap').forEach(wrap => {
+    const flyout = wrap.querySelector('.sidebar-flyout');
+    if (!flyout) return;
+    wrap.addEventListener('mouseenter', () => {
+        if (!sidebar.classList.contains('collapsed')) return;
+        const rect = wrap.getBoundingClientRect();
+        flyout.style.top = rect.top + 'px';
+    });
+});
+
+// Ajuster la réserve d'espace du contenu à la hauteur réelle du header
+// (variable sur mobile : le header peut passer sur 2 lignes selon les boutons de chaque page)
+const topbarEl = document.querySelector('.topbar');
+function syncTopbarHeight() {
+    document.documentElement.style.setProperty('--topbar-height', topbarEl.offsetHeight + 'px');
+}
+syncTopbarHeight();
+window.addEventListener('resize', syncTopbarHeight);
+window.addEventListener('orientationchange', syncTopbarHeight);
+</script>
+<script>
+// ── Pagination dynamique des tableaux (nombre de lignes adapté à la hauteur d'écran) ──
+(function () {
+    function pageRange(current, total) {
+        if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+        const pages = [1];
+        if (current > 3) pages.push('…');
+        for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p);
+        if (current < total - 2) pages.push('…');
+        pages.push(total);
+        return pages;
+    }
+
+    function paginateTable(table) {
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        const rows = Array.from(tbody.children).filter(r => r.tagName === 'TR' && !r.hasAttribute('data-empty-row'));
+        const sel = table.dataset.paginate;
+        const bar = (sel && document.querySelector(sel)) || table.closest('.card')?.querySelector('[data-pagination-bar]');
+        if (!rows.length || !bar) return;
+
+        const minRows = parseInt(table.dataset.paginateMin || '5', 10);
+        const maxRows = parseInt(table.dataset.paginateMax || '50', 10);
+        const reserved = parseInt(table.dataset.paginateReserved || '140', 10);
+
+        const info = document.createElement('div');
+        info.className = 'text-muted small';
+        const nav = document.createElement('nav');
+        const ul = document.createElement('ul');
+        ul.className = 'pagination pagination-sm mb-0';
+        nav.appendChild(ul);
+        bar.innerHTML = '';
+        bar.className = 'card-footer bg-transparent d-flex align-items-center justify-content-between flex-wrap gap-2';
+        bar.appendChild(info);
+        bar.appendChild(nav);
+
+        let currentPage = 1;
+        let perPage = minRows;
+
+        function computePerPage() {
+            const rowH = rows[0].getBoundingClientRect().height || 40;
+            const top = tbody.getBoundingClientRect().top;
+            const avail = window.innerHeight - top - reserved;
+            const n = Math.floor(avail / rowH);
+            return Math.max(minRows, Math.min(maxRows, n || minRows));
+        }
+
+        function render() {
+            const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * perPage;
+            const end = start + perPage;
+            rows.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+            info.textContent = `Affichage ${start + 1}–${Math.min(end, rows.length)} sur ${rows.length}`;
+
+            ul.innerHTML = '';
+            if (totalPages <= 1) { nav.style.visibility = 'hidden'; return; }
+            nav.style.visibility = 'visible';
+
+            const addItem = (label, page, disabled, active) => {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                if (active || (disabled && label !== '«' && label !== '»')) {
+                    li.innerHTML = `<span class="page-link">${label}</span>`;
+                } else {
+                    li.innerHTML = `<a class="page-link" href="#">${label}</a>`;
+                    if (!disabled) {
+                        li.querySelector('a').addEventListener('click', e => {
+                            e.preventDefault();
+                            currentPage = page;
+                            render();
+                        });
+                    }
+                }
+                ul.appendChild(li);
+            };
+            addItem('«', currentPage - 1, currentPage === 1, false);
+            pageRange(currentPage, totalPages).forEach(p =>
+                p === '…' ? addItem('…', 0, true, false) : addItem(p, p, false, p === currentPage)
+            );
+            addItem('»', currentPage + 1, currentPage === totalPages, false);
+        }
+
+        function adjustToFit() {
+            const maxAllowed = Math.min(maxRows, rows.length);
+            const rowH = rows[0].getBoundingClientRect().height || 40;
+            let guard = 0;
+            while (guard < 40) {
+                guard++;
+                const slack = window.innerHeight - bar.getBoundingClientRect().bottom;
+                if (slack > rowH * 1.2 && perPage < maxAllowed) {
+                    perPage++;
+                    render();
+                } else if (slack < 0 && perPage > minRows) {
+                    perPage--;
+                    render();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        function refresh() {
+            perPage = computePerPage();
+            currentPage = 1;
+            render();
+            adjustToFit();
+        }
+
+        refresh();
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(refresh, 200);
+        });
+    }
+
+    document.querySelectorAll('table[data-paginate]').forEach(paginateTable);
+})();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block icon %}fas fa-history{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4"><div class="text-muted small">Élève</div><div class="fw-bold">{{ eleve.nom }} {{ eleve.prenom }}</div></div>
+      <div class="col-md-2"><div class="text-muted small">Matricule</div><div>{{ eleve.matricule }}</div></div>
+      <div class="col-md-2"><div class="text-muted small">Classe</div><div>{{ eleve.classe|default:"—" }}</div></div>
+      <div class="col-md-4 d-flex gap-4 justify-content-md-end mt-2 mt-md-0">
+        <div class="text-center"><div class="fw-bold text-danger fs-5">{{ total_absences }}</div><div class="small text-muted">Absences</div></div>
+        <div class="text-center"><div class="fw-bold text-warning fs-5">{{ total_excuses }}</div><div class="small text-muted">Excusées</div></div>
+        <div class="text-center"><div class="fw-bold text-info fs-5">{{ total_retards }}</div><div class="small text-muted">Retards</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="fas fa-history me-2 text-primary"></i>Historique des présences</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" data-paginate>
+        <thead><tr><th>Date</th><th>Statut</th><th>Motif</th></tr></thead>
+        <tbody>
+        {% for p in presences %}
+        <tr class="{% if p.statut == 'absent' %}table-danger{% elif p.statut == 'excuse' %}table-warning{% elif p.statut == 'retard' %}table-info{% endif %}">
+          <td>{{ p.date|date:"d/m/Y" }}</td>
+          <td>
+            {% if p.statut == 'present' %}<span class="badge bg-success">Présent</span>
+            {% elif p.statut == 'absent' %}<span class="badge bg-danger">Absent</span>
+            {% elif p.statut == 'excuse' %}<span class="badge bg-warning text-dark">Excusé</span>
+            {% elif p.statut == 'retard' %}<span class="badge bg-info text-dark">En retard</span>
+            {% endif %}
+          </td>
+          <td><small class="text-muted">{{ p.motif|default:"—" }}</small></td>
+        </tr>
+        {% empty %}
+        <tr data-empty-row><td colspan="3" class="text-center text-muted py-4">Aucun enregistrement</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer bg-transparent" data-pagination-bar></div>
+</div>
+<div class="mt-3">
+  <a href="{% url 'presences:suivi' %}?classe={{ eleve.classe.pk }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+</div>
+{% endblock %}
